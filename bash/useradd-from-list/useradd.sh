@@ -9,7 +9,7 @@
 
 # shellcheck source=/dev/null
 
-source "$HOME/scripts/bash/useful-functions/print-color.sh"
+source "$HOME/git-repos/scripts/bash/useful-functions/print-color.sh"
 
 # --------------------------- Users Creation ---------------------------
 
