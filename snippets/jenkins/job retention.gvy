@@ -1,0 +1,1 @@
+options{ buildDiscarder(logRotator(numToKeepStr: '50', artifactNumToKeepStr: '50')) }
