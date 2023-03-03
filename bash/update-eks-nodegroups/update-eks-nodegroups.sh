@@ -32,8 +32,10 @@ while true; do
             cluster="$2"
             shift 2
             ;;
-        -- ) shift; break ;;
-        * )
+        --)
+            shift
+            break ;;
+        *)
             echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME]"
             exit 1
             ;;
