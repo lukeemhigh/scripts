@@ -15,7 +15,7 @@ source "$HOME/git-repos/scripts/bash/useful-functions/print-color.sh"
 
 TEMP=$(getopt -o a: --long address: -n 'test.sh' -- "$@")
 
-if [ ! "$0" ]; then
+if [ $? -ne 0 ]; then
     echo "usage: $0 [--address | -a] [NEXUS_ADDRESS]"
     exit 1
 fi
@@ -24,9 +24,15 @@ eval set -- "$TEMP"
 
 while true; do
     case "$1" in
-        -a | --address ) address="$2"; shift 2 ;;
-        -- ) shift; break ;;
-        * )
+        -a|--address)
+            address="$2"
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
             echo "usage: $0 [--address | -a] [NEXUS_ADDRESS]"
             exit 1
             ;;

@@ -13,9 +13,9 @@ source "$HOME/git-repos/scripts/bash/useful-functions/print-color.sh"
 
 # --------------------------- Optional Flags ---------------------------
 
-TEMP=$(getopt -o p:c: --long profile:cluster: -n 'test.sh' -- "$@")
+TEMP=$(getopt -o p:c: --long profile:,cluster: -n 'test.sh' -- "$@")
 
-if [ $? != 0 ]; then
+if [ $? -ne 0 ]; then
     echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME]"
     exit 1
 fi
@@ -24,8 +24,14 @@ eval set -- "$TEMP"
 
 while true; do
     case "$1" in
-        -p | --profile ) profile="$2"; shift 2 ;;
-        -c | --cluster ) cluster="$2"; shift 2 ;;
+        -p|--profile) 
+            profile="$2"
+            shift 2
+            ;;
+        -c|--cluster) 
+            cluster="$2"
+            shift 2
+            ;;
         -- ) shift; break ;;
         * )
             echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME]"
@@ -71,11 +77,15 @@ for node in "${node_list[@]}"; do
         print_color "green" "Nodegroup min size is $min_size"
         print_color "green" "Nodegroup desired capacity is $desired_capacity"
 
-        if [ "$max_size" -lt 2 ]; then
-            if [ "$desired_capacity" -lt 2 ]; then
+        if [ "$desired_capacity" -lt 2 ]; then
+            if [ "$max_size" -lt 2 ]; then
                 print_color "blue" "Scaling up nodegroup ${node//\"/} capacity..."
                 s_flag=1
                 eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( ++desired_capacity )) --nodes-min "$min_size" --nodes-max $(( ++max_size ))
+            else
+                print_color "blue" "Scaling up nodegroup ${node//\"/} capacity..."
+                s_flag=2
+                eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( ++desired_capacity )) --nodes-min "$min_size" --nodes-max "$max_size"
             fi 
         fi
 
@@ -89,6 +99,9 @@ for node in "${node_list[@]}"; do
         if [ $s_flag -eq 1 ]; then
             print_color "blue" "Scaling down ${node//\"/}..."
             eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( --desired_capacity )) --nodes-min "$min_size" --nodes-max $(( --max_size ))
+        elif [ $s_flag -eq 2 ]; then
+            print_color "blue" "Scaling down ${node//\"/}..."
+            eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( --desired_capacity )) --nodes-min "$min_size" --nodes-max "$max_size"
         fi
 
         print_color "green" "${node//\"/} succesfully upgraded"
