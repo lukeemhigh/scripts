@@ -14,6 +14,8 @@ function print_color(){
     "green") COLOR="\033[0;32m";;
     "red") COLOR="\033[0;31m";;
     "blue") COLOR="\033[1;34m";;
+    "purple") COLOR="\033[1;35m";;
+    "yellow") COLOR="\033[1;33m";;
     *) COLOR="\033[0m";;
     esac
     echo -e "${COLOR} $2 ${NC}"
