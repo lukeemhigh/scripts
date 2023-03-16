@@ -10,6 +10,8 @@
 # shellcheck source=/dev/null
 
 source "$HOME/git-repos/scripts/bash/useful-functions/print-color.sh"
+source "$HOME/git-repos/scripts/bash/useful-functions/test-https.sh"
+
 
 # --------------------------- Optional Flags ---------------------------
 
@@ -51,17 +53,29 @@ date=$(date +%F_%T)
 
 output_path="$HOME/tmp/nexus-inventory-$date"
 
+https=$(test_https)
+
 # --------------------------- Repositories Retrieval ---------------------------
+
+print_color "blue" "Checking https connection.."
+
+if [[ "${https}" == "true" ]]; then
+    print_color "green" "Server accepts https connections. Proceeding.."
+    protocol="https"
+else
+    print_color "red" "Server does not accetp https connection. Switching to http.."
+    protocol="http"
+fi
 
 print_color "blue" "Checking repositories for $address"
 
 mkdir -p "$output_path/assets"
 
 curl -sn -X 'GET' \
-"https://$address/service/rest/v1/repositories" \
--H 'accept: application/json' | \
-jq -r '.[] | . as $e | [.name,.format,.type,.url] | @csv' \
->> "$output_path/$address-repositories-list.csv"
+    "$protocol://$address/service/rest/v1/repositories" \
+    -H 'accept: application/json' | \
+    jq -r '.[] | . as $e | [.name,.format,.type,.url] | @csv' \
+    >> "$output_path/$address-repositories-list.csv"
 
 print_color "green" "Done writing file $output_path/$address-repositories-list.csv"
 
@@ -76,10 +90,10 @@ for repo in "${repo_list[@]}"; do
     print_color "blue" "Checking assets for ${repo//\"/}"
 
     curl -sn -X 'GET' \
-    "https://$address/service/rest/v1/assets?repository=${repo//\"/}" \
-    -H 'accept: application/json' | \
-    jq -r '.items[] | . as $e | [.repository,.format,.id,.path,.downloadUrl] | @csv' \
-    >> "$output_path/assets/${repo//\"/}-assets-list.csv"
+        "$protocol://$address/service/rest/v1/assets?repository=${repo//\"/}" \
+        -H 'accept: application/json' | \
+        jq -r '.items[] | . as $e | [.repository,.format,.id,.path,.downloadUrl] | @csv' \
+        >> "$output_path/assets/${repo//\"/}-assets-list.csv"
 
     if [[ ! -s "$output_path/assets/${repo//\"/}-assets-list.csv" ]]; then
         print_color "red" "Repo ${repo//\"/} is empty"
@@ -88,4 +102,4 @@ for repo in "${repo_list[@]}"; do
         print_color "green" "Assets found. Written list at $output_path/assets/${repo//\"/}-assets-list.csv"
     fi
 
-done 
+done
