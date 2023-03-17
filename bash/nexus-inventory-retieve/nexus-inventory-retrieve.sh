@@ -64,7 +64,7 @@ if [[ "${https}" == "true" ]]; then
     print_color "green" "Server accepts https connections. Proceeding.."
     protocol="https"
 else
-    print_color "red" "Server does not accept https connection. Switching to http.."
+    print_color "red" "Server does not accept https connection. Falling back to http.."
     protocol="http"
 fi
 
