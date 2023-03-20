@@ -1,4 +1,6 @@
-# Compilation of functions to be sourced into other scritps
+# Description
+
+Compilation of somewhat useful functions to be sourced into other scritps
 
 ## print-color
 

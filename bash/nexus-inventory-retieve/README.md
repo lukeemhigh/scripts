@@ -1,4 +1,6 @@
-# Automate Sonatype Nexus Repository inventory retrieval through its REST APIs
+# Description
+
+Automate Sonatype Nexus Repository inventory retrieval through its REST APIs
 
 ## .netrc
 
