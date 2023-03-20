@@ -6,12 +6,16 @@ Prints a message in a given color. Red or green available at the moment, more to
 
 ## check-service-status
 
-Check the status of a given service. Error and exit if not active
+Checks the status of a given service. Error and exit if not active
 
 ## check-ports
 
-Check if a given firewalld port is open. Error and exit if port is closed
+Checks if a given firewalld port is open. Error and exit if port is closed
 
 ## check-item
 
-Check if an item is present on the page
+Checks if an item is present on the page
+
+## test-https
+
+Checks if the specified server accepts incoming https connections
