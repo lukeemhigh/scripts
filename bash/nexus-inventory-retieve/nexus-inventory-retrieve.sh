@@ -55,6 +55,7 @@ date=$(date +%F_%T)
 output_path="$HOME/tmp/nexus-inventory-$date"
 
 https=$(test_https)
+https=$(test_https "$address")
 
 # --------------------------- Repositories Retrieval ---------------------------
 
