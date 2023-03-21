@@ -54,7 +54,6 @@ date=$(date +%F_%T)
 
 output_path="$HOME/tmp/nexus-inventory-$date"
 
-https=$(test_https)
 https=$(test_https "$address")
 
 # --------------------------- Repositories Retrieval ---------------------------
@@ -91,16 +90,34 @@ for repo in "${repo_list[@]}"; do
 
     print_color "blue" "Checking assets for ${repo//\"/}"
 
-    curl -sn -X 'GET' \
-        "$protocol://$address/service/rest/v1/assets?repository=${repo//\"/}" \
-        -H 'accept: application/json' | \
-        jq -r '.items[] | . as $e | [.repository,.format,.id,.path,.downloadUrl] | @csv' \
-        >> "$output_path/assets/${repo//\"/}-assets-list.csv"
+    continuation_token="gnappo"
+    i=0
+
+    while [ -n "${continuation_token//\"/}" ]; do
+
+        i=$(( ++i ))
+
+        if [ "${continuation_token//\"/}" = "gnappo" ]; then
+            json_page=$(curl -sn -X 'GET' "${protocol}://${address}/service/rest/v1/assets?repository=${repo//\"/}" \
+                -H 'accept: application/json')
+            echo "$json_page" | jq -r '.items[] | . as $e | [.repository,.format,.id,.path,.downloadUrl] | @csv' \
+                >> "${output_path}/assets/${repo//\"/}-assets-list.csv"
+            continuation_token=$(echo "$json_page" | jq -r '. as $e | [.continuationToken] | @csv')
+        else
+            json_page=$(curl -sn -X 'GET' "${protocol}://${address}/service/rest/v1/assets?continuationToken=${continuation_token//\"/}&repository=${repo//\"/}" \
+                -H 'accept: application/json')
+            echo "$json_page" | jq -r '.items[] | . as $e | [.repository,.format,.id,.path,.downloadUrl] | @csv' \
+                >> "${output_path}/assets/${repo//\"/}-assets-list.csv"
+            continuation_token=$(echo "$json_page" | jq -r '. as $e | [.continuationToken] | @csv')
+        fi
+
+    done
 
     if [[ ! -s "$output_path/assets/${repo//\"/}-assets-list.csv" ]]; then
         print_color "red" "Repo ${repo//\"/} is empty"
         rm -f "$output_path/assets/${repo//\"/}-assets-list.csv"
     else
+        print_color "white" "Done processing $i pages"
         print_color "green" "Assets found. Written list at $output_path/assets/${repo//\"/}-assets-list.csv"
     fi
 
