@@ -12,9 +12,9 @@
 function check_service_status(){
     is_service_active=$(sudo systemctl is-active "$1")
     if [ "$is_service_active" = "active" ]; then
-    print_color "green" "$1 service is active"
-else
-    print_color "red" "$1 service is not running"
-    exit 1
-fi
+        print_color "green" "$1 service is active"
+    else
+        print_color "red" "$1 service is not running"
+        exit 1
+    fi
 }

@@ -14,9 +14,9 @@
 function print_color(){
     NC='\033[0m' # No Color
     case $1 in
-    "green") COLOR="‘\033[0;32m";;
-    "red") COLOR="‘\033[0;31m";;
-    *) COLOR="‘\033[0m";;
+        "green") COLOR="‘\033[0;32m" ;;
+        "red") COLOR="‘\033[0;31m" ;;
+        *) COLOR="‘\033[0m" ;;
     esac
     echo -e "${COLOR} $2 ${NC}"
 }
@@ -30,11 +30,11 @@ function print_color(){
 function check_service_status(){
     is_service_active=$(sudo systemctl is-active "$1")
     if [ "$is_service_active" = "active" ]; then
-    print_color "green" "$1 service is active"
-else
-    print_color "red" "$1 service is not running"
-    exit 1
-fi
+        print_color "green" "$1 service is active"
+    else
+        print_color "red" "$1 service is not running"
+        exit 1
+    fi
 }
 
 ##########################################
@@ -95,7 +95,7 @@ check_ports 3306
 
 # Configure Database
 print_color "green" "Configuring database..."
-cat > configure-db.sql <<-EOF 
+cat > configure-db.sql <<-EOF
 CREATE DATABASE ecomdb;
 CREATE USER 'ecomuser'@'localhost' IDENTIFIED BY 'ecompassword';
 GRANT ALL PRIVILEGES ON *.* TO 'ecomuser'@'localhost';

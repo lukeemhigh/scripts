@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-# Simple script to generate an xlsx file containing in-use aws resources with their respective tags, 
+# Simple script to generate an xlsx file containing in-use aws resources with their respective tags,
 # grouped by region and service type.
 #
-# TO DO: MAKE THE SCRIPT READ THE LIST OF ALL REGIONS AND SERVICES FROM AWSCLI OUTPUT (IF SUCH COMMAND EXISTS) 
+# TO DO: MAKE THE SCRIPT READ THE LIST OF ALL REGIONS AND SERVICES FROM AWSCLI OUTPUT (IF SUCH COMMAND EXISTS)
 # INSTEAD OF HAVING THEM HARD-CODED INTO ARRAYS
 #
 # Author: Luca Giugliardi
@@ -18,51 +18,51 @@ source "$HOME/git-repos/scripts/bash/useful-functions/print-color.sh"
 # --------------------------- Declaring Arrays ---------------------------
 
 region_list=(
-            "us-east-2"
-            "us-east-1"
-            "us-west-1"
-            "us-west-2"
-            "af-south-1"
-            "ap-east-1"
-            "ap-southeast-3"
-            "ap-south-1"
-            "ap-northeast-3"
-            "ap-northeast-2"
-            "ap-southeast-1"
-            "ap-southeast-2"
-            "ap-northeast-1"
-            "ca-central-1"
-            "eu-central-1"
-            "eu-west-1"
-            "eu-west-2"
-            "eu-south-1"
-            "eu-west-3"
-            "eu-north-1"
-            "me-south-1"
-            "me-central-1"
-            "sa-east-1"
-            )
+    "us-east-2"
+    "us-east-1"
+    "us-west-1"
+    "us-west-2"
+    "af-south-1"
+    "ap-east-1"
+    "ap-southeast-3"
+    "ap-south-1"
+    "ap-northeast-3"
+    "ap-northeast-2"
+    "ap-southeast-1"
+    "ap-southeast-2"
+    "ap-northeast-1"
+    "ca-central-1"
+    "eu-central-1"
+    "eu-west-1"
+    "eu-west-2"
+    "eu-south-1"
+    "eu-west-3"
+    "eu-north-1"
+    "me-south-1"
+    "me-central-1"
+    "sa-east-1"
+)
 
 services_list=(
-            "amplify"
-            "cloudfront"
-            "cloudwatch"
-            "cognito"
-            "dynamodb"
-            "ebs"
-            "ec2"
-            "ecs"
-            "eks"
-            "elasticache"
-            "elb"
-            "iam"
-            "lambda"
-            "rds"
-            "route53"
-            "s3"
-            "sns"
-            "sqs"
-            )
+    "amplify"
+    "cloudfront"
+    "cloudwatch"
+    "cognito"
+    "dynamodb"
+    "ebs"
+    "ec2"
+    "ecs"
+    "eks"
+    "elasticache"
+    "elb"
+    "iam"
+    "lambda"
+    "rds"
+    "route53"
+    "s3"
+    "sns"
+    "sqs"
+)
 
 # --------------------------- Global Variables ---------------------------
 
@@ -84,11 +84,11 @@ for region in "${region_list[@]}"; do
         filename="$region-$service.csv"
 
         aws resourcegroupstaggingapi get-resources \
-        --resource-type-filters "$service" \
-        --region="$region" \
-        --output json 2> /dev/null | \
-        jq -r '.ResourceTagMappingList[] | . as $e | .Tags[] | [$e.ResourceARN, .Key, .Value] | @csv' \
-        >> "$output_path/data/$filename"
+            --resource-type-filters "$service" \
+            --region="$region" \
+            --output json 2> /dev/null | \
+            jq -r '.ResourceTagMappingList[] | . as $e | .Tags[] | [$e.ResourceARN, .Key, .Value] | @csv' \
+            >> "$output_path/data/$filename"
 
         if [ ! -s "$output_path/data/$filename" ]; then
             rm -f "$output_path/data/$filename"

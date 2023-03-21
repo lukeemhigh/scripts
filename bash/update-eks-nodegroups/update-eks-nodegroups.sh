@@ -24,11 +24,11 @@ eval set -- "$TEMP"
 
 while true; do
     case "$1" in
-        -p|--profile) 
+        -p|--profile)
             profile="$2"
             shift 2
             ;;
-        -c|--cluster) 
+        -c|--cluster)
             cluster="$2"
             shift 2
             ;;
@@ -88,10 +88,10 @@ for node in "${node_list[@]}"; do
                 print_color "blue" "Scaling up nodegroup ${node//\"/} capacity..."
                 s_flag=2
                 eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( ++desired_capacity )) --nodes-min "$min_size" --nodes-max "$max_size"
-            fi 
+            fi
         fi
 
-# --------------------------- Nodegroups Upgrade ---------------------------
+        # --------------------------- Nodegroups Upgrade ---------------------------
 
         print_color "blue" "Upgrading ${node//\"/}..."
         eksctl upgrade nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --force-upgrade
