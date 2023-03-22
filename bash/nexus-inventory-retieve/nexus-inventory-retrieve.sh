@@ -68,7 +68,7 @@ else
     protocol="http"
 fi
 
-print_color "blue" "Checking repositories for $address"
+print_color "blue" "Checking repositories for ${address//:[0-9]???/}"
 
 mkdir -p "$output_path/assets"
 
@@ -76,13 +76,13 @@ curl -sn -X 'GET' \
     "$protocol://$address/service/rest/v1/repositories" \
     -H 'accept: application/json' | \
     jq -r '.[] | . as $e | [.name,.format,.type,.url] | @csv' \
-    >> "$output_path/$address-repositories-list.csv"
+    >> "$output_path/${address//:[0-9]???/}-repositories-list.csv"
 
-print_color "green" "Done writing file $output_path/$address-repositories-list.csv"
+print_color "green" "Done writing file $output_path/${address//:[0-9]???/}-repositories-list.csv"
 
 # --------------------------- Assets Retrieval ---------------------------
 
-mapfile -t repo_list < <(cut -d',' -f1 "$output_path/$address-repositories-list.csv")
+mapfile -t repo_list < <(cut -d',' -f1 "$output_path/${address//:[0-9]???/}-repositories-list.csv")
 
 declare -a repo_list
 
