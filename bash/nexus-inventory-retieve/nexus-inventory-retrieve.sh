@@ -13,7 +13,6 @@ source "$HOME/git-repos/scripts/bash/useful-functions/print-color.sh"
 # shellcheck source=/dev/null
 source "$HOME/git-repos/scripts/bash/useful-functions/test-https.sh"
 
-
 # --------------------------- Optional Flags ---------------------------
 
 TEMP=$(getopt -o a: --long address: -n 'test.sh' -- "$@")
