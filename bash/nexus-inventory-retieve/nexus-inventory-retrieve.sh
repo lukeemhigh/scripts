@@ -15,10 +15,10 @@ source "$HOME/git-repos/scripts/bash/useful-functions/test-https.sh"
 
 # --------------------------- Optional Flags ---------------------------
 
-TEMP=$(getopt -o a: --long address: -n 'test.sh' -- "$@")
+TEMP=$(getopt -o a:n --long address:,nogroups -n 'test.sh' -- "$@")
 
 if [ $? -ne 0 ]; then
-    echo "usage: $0 [--address | -a] [NEXUS_ADDRESS]"
+    echo "usage: $0 [--address | -a] [NEXUS_ADDRESS] [--nogroups | -n]"
     exit 1
 fi
 
@@ -30,12 +30,16 @@ while true; do
             address="$2"
             shift 2
             ;;
+        -n|--nogroups)
+            skip_group="true"
+            shift
+            ;;
         --)
             shift
             break
             ;;
         *)
-            echo "usage: $0 [--address | -a] [NEXUS_ADDRESS]"
+            echo "usage: $0 [--address | -a] [NEXUS_ADDRESS] [--nogroups | -n]"
             exit 1
             ;;
     esac
@@ -81,16 +85,17 @@ print_color "green" "Done writing file $output_path/${address//:[0-9]*/}-reposit
 
 # --------------------------- Assets Retrieval ---------------------------
 
-mapfile -t repo_list < <(cut -d',' -f1 "$output_path/${address//:[0-9]*/}-repositories-list.csv")
-
-declare -a repo_list
-
-for repo in "${repo_list[@]}"; do
+while IFS=, read -r repo type; do
 
     print_color "blue" "Checking assets for ${repo//\"/}"
 
     continuation_token="gnappo"
     i=0
+
+    if [[ "$skip_group" == "true" ]] && [[ "${type//\"/}" == group ]]; then
+        print_color "blue" "Skipping group ${repo//\"/}"
+        continue
+    fi
 
     while [ -n "${continuation_token//\"/}" ]; do
 
@@ -120,4 +125,6 @@ for repo in "${repo_list[@]}"; do
         print_color "green" "Assets found. Written list at $output_path/assets/${repo//\"/}-assets-list.csv"
     fi
 
-done
+done < <(cut -d',' -f1,3 "$output_path/${address//:[0-9]*/}-repositories-list.csv")
+
+unset IFS
