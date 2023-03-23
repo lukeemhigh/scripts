@@ -11,7 +11,7 @@
 ##########################################
 
 function test_https(){
-    if wget --spider https://"$1"; then
+    if wget --spider https://"$1" > /dev/null 2>&1; then
         local https="true"
     else
         local https="false"
