@@ -63,7 +63,7 @@ https=$(test_https "$address")
 
 print_color "blue" "Checking https connection.."
 
-if [[ "${https}" == "true" ]]; then
+if [[ "$https" == "true" ]]; then
     print_color "green" "Server accepts https connections. Proceeding.."
     protocol="https"
 else
