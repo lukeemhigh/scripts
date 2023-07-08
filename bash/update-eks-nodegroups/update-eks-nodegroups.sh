@@ -42,7 +42,7 @@ while true; do
     esac
 done
 
-# If optargs are empty, prompt user for aws profile and  get eks cluster name from query
+# If optargs are empty, prompt user for aws profile and get eks cluster name from query
 
 if [[ -z $profile ]]; then
     profile=$(cat "$HOME"/.aws/config |\
@@ -72,7 +72,6 @@ for node in "${node_list[@]}"; do
     s_flag=0
 
     print_color "blue" "Processing ${node//\"/}..."
-ijsdlkafj
     data=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" -o json)
     
     status=$(echo "$data" | jq -r '.[] | . as $e | [$e.Status] | @csv')
