@@ -42,7 +42,7 @@ while true; do
     esac
 done
 
-# If optargs are empty, prompt user for aws profile and eks cluster name
+# If optargs are empty, prompt user for aws profile and  get eks cluster name from query
 
 if [[ -z $profile ]]; then
     profile=$(cat "$HOME"/.aws/config |\
