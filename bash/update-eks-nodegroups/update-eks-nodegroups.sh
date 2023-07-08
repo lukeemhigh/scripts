@@ -53,9 +53,22 @@ if [[ -z $profile ]]; then
     --border \
     --prompt 'Which AWS profile do you want to use? ')
     
-    cluster=$(aws --profile "$profile" eks list-clusters |\
+    cluster_list=$(aws --profile "$profile" eks list-clusters |\
     jq -r '.clusters | @csv' |\
+    tr ',' '\n' |\
     sed 's/\"\(.*\)\"/\1/')
+
+    cluster_number=$(echo "$cluster_list" | wc -l)
+
+    if [ "$cluster_number" -gt 1 ]; then
+        cluster=$(echo "cluster_list" |\
+        fzf --height=30% \
+        --layout=reverse \
+        --border \
+        --prompt 'Which EKS cluster do you want to upgrade? ')
+    else
+        cluster=$cluster_list
+    fi
 fi
 
 
