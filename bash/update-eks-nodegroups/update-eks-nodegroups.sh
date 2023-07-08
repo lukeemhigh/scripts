@@ -45,12 +45,19 @@ done
 # If optargs are empty, prompt user for aws profile and eks cluster name
 
 if [[ -z $profile ]]; then
-    read -p "Enter your aws profile name:"$'\n> ' profile
+    profile=$(cat "$HOME"/.aws/config |\
+    grep -E '\[[[:alnum:]]+\]' |\
+    sed 's/\[\(.*\)\]/\1/' |\
+    fzf --height=30% \
+    --layout=reverse \
+    --border \
+    --prompt 'Which AWS profile do you want to use? ')
+    
+    cluster=$(aws --profile "$profile" eks list-clusters |\
+    jq -r '.clusters | @csv' |\
+    sed 's/\"\(.*\)\"/\1/')
 fi
 
-if [[ -z $cluster ]]; then
-    read -p "Enter your eks cluster name:"$'\n> ' cluster
-fi
 
 # --------------------------- Nodegroups Check ---------------------------
 
@@ -65,11 +72,13 @@ for node in "${node_list[@]}"; do
     s_flag=0
 
     print_color "blue" "Processing ${node//\"/}..."
-
-    status=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" -o json | jq -r '.[] | . as $e | [$e.Status] | @csv')
-    max_size=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" -o json | jq -r '.[] | . as $e | [$e.MaxSize] | @csv')
-    min_size=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" -o json | jq -r '.[] | . as $e | [$e.MinSize] | @csv')
-    desired_capacity=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" -o json | jq -r '.[] | . as $e | [$e.DesiredCapacity] | @csv')
+ijsdlkafj
+    data=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" -o json)
+    
+    status=$(echo "$data" | jq -r '.[] | . as $e | [$e.Status] | @csv')
+    max_size=$(echo "$data" | jq -r '.[] | . as $e | [$e.MaxSize] | @csv')
+    min_size=$(echo "$data" | jq -r '.[] | . as $e | [$e.MinSize] | @csv')
+    desired_capacity=$(echo "$data" | jq -r '.[] | . as $e | [$e.DesiredCapacity] | @csv')
 
     # Checking nodegroup status and capacity, scaling up if necessary
 
