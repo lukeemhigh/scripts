@@ -9,7 +9,7 @@
 
 # shellcheck source=/dev/null
 
-source "$HOME/git-repos/scripts/bash/useful-functions/print-color.sh"
+source "${HOME}/git-repos/scripts/bash/useful-functions/print-color.sh"
 
 # --------------------------- Optional Flags ---------------------------
 
@@ -44,8 +44,8 @@ done
 
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
 
-if [[ -z $profile ]]; then
-    profile=$(cat "$HOME"/.aws/config |\
+if [[ -z "$profile" ]]; then
+    profile=$(cat "${HOME}/.aws/config" |\
     grep -E '\[[[:alnum:]]+\]' |\
     sed 's/\[\(.*\)\]/\1/' |\
     fzf --height=30% \
@@ -60,8 +60,8 @@ if [[ -z $profile ]]; then
 
     cluster_number=$(echo "$cluster_list" | wc -l)
 
-    if [ "$cluster_number" -gt 1 ]; then
-        cluster=$(echo "cluster_list" |\
+    if [ "${cluster_number}" -gt 1 ]; then
+        cluster=$(echo "$cluster_list" |\
         fzf --height=30% \
         --layout=reverse \
         --border \
@@ -74,11 +74,13 @@ fi
 
 # --------------------------- Nodegroups Check ---------------------------
 
-print_color "blue" "Checking $cluster managed nodegroups..."
+print_color "blue" "Checking ${cluster} managed nodegroups..."
 
-mapfile -t node_list < <(eksctl get nodegroup --profile "$profile" --cluster "$cluster" -o json 2> /dev/null | jq -r '.[] | . as $e | [$e.Name] | @csv')
+mapfile -t node_list < <(eksctl get nodegroup --profile "${profile}" --cluster "${cluster}" -o json 2> /dev/null | jq -r '.[] | . as $e | [$e.Name] | @csv')
 
 declare -a node_list
+
+# TODO: Use parallel instead of a for loop to speed up the upgrade (it will probably require to rewrite the upgrade part as a function..)
 
 for node in "${node_list[@]}"; do
 
@@ -96,9 +98,9 @@ for node in "${node_list[@]}"; do
 
     if [[ "${status//\"/}" == "ACTIVE" ]]; then
         print_color "green" "Nodegroup status is ${status//\"/}"
-        print_color "green" "Nodegroup max size is $max_size"
-        print_color "green" "Nodegroup min size is $min_size"
-        print_color "green" "Nodegroup desired capacity is $desired_capacity"
+        print_color "green" "Nodegroup max size is ${max_size}"
+        print_color "green" "Nodegroup min size is ${min_size}"
+        print_color "green" "Nodegroup desired capacity is ${desired_capacity}"
 
         if [ "$desired_capacity" -lt 2 ]; then
             if [ "$max_size" -lt 2 ]; then
@@ -119,12 +121,12 @@ for node in "${node_list[@]}"; do
 
         # If nodegroup was scaled up, bring it down to the original capacity
 
-        if [ $s_flag -eq 1 ]; then
+        if [ "${s_flag}" -eq 1 ]; then
             print_color "blue" "Scaling down ${node//\"/}..."
             eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( --desired_capacity )) --nodes-min "$min_size" --nodes-max $(( --max_size ))
-        elif [ $s_flag -eq 2 ]; then
+        elif [ "${s_flag}" -eq 2 ]; then
             print_color "blue" "Scaling down ${node//\"/}..."
-            eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( --desired_capacity )) --nodes-min "$min_size" --nodes-max "$max_size"
+            eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( --desired_capacity )) --nodes-min "$min_size" --nodes-max "${max_size}"
         fi
 
         print_color "green" "${node//\"/} succesfully upgraded"

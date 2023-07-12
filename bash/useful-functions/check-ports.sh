@@ -11,7 +11,7 @@
 ##########################################
 function check_ports(){
     firewalld_ports=$(sudo firewall-cmd --list-all --zone=public | grep ports)
-    if [[ $firewalld_ports = *"$1"* ]]; then
+    if [[ "$firewalld_ports" = *"$1"* ]]; then
         print_color "green" "Port $1 configured"
     else
         print_color "red" "Port $1 not configured"

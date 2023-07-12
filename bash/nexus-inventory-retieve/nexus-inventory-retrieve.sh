@@ -8,10 +8,10 @@
 # --------------------------- Import Functions ---------------------------
 
 # shellcheck source=/dev/null
-source "$HOME/git-repos/scripts/bash/useful-functions/print-color.sh"
+source "${HOME}/git-repos/scripts/bash/useful-functions/print-color.sh"
 
 # shellcheck source=/dev/null
-source "$HOME/git-repos/scripts/bash/useful-functions/test-https.sh"
+source "${HOME}/git-repos/scripts/bash/useful-functions/test-https.sh"
 
 # --------------------------- Optional Flags ---------------------------
 
@@ -55,7 +55,7 @@ fi
 
 date=$(date +%F_%T)
 
-output_path="$HOME/tmp/nexus-inventory-$date"
+output_path="${HOME}/tmp/nexus-inventory-$date"
 
 https=$(test_https "$address")
 
@@ -73,13 +73,13 @@ fi
 
 print_color "blue" "Checking repositories for ${address//:[0-9]*/}"
 
-mkdir -p "$output_path/assets"
+mkdir -p "${output_path}/assets"
 
 curl -sn -X 'GET' \
-    "$protocol://$address/service/rest/v1/repositories" \
+    "${protocol}://${address}/service/rest/v1/repositories" \
     -H 'accept: application/json' | \
     jq -r '.[] | . as $e | [.name,.format,.type,.url] | @csv' \
-    >> "$output_path/${address//:[0-9]*/}-repositories-list.csv"
+    >> "${output_path}/${address//:[0-9]*/}-repositories-list.csv"
 
 print_color "green" "Done writing file $output_path/${address//:[0-9]*/}-repositories-list.csv"
 
@@ -117,14 +117,14 @@ while IFS=, read -r repo type; do
 
     done
 
-    if [[ ! -s "$output_path/assets/${repo//\"/}-assets-list.csv" ]]; then
+    if [[ ! -s "${output_path}/assets/${repo//\"/}-assets-list.csv" ]]; then
         print_color "red" "Repo ${repo//\"/} is empty"
-        rm -f "$output_path/assets/${repo//\"/}-assets-list.csv"
+        rm -f "${output_path}/assets/${repo//\"/}-assets-list.csv"
     else
         print_color "white" "Done processing $i pages"
-        print_color "green" "Assets found. Written list at $output_path/assets/${repo//\"/}-assets-list.csv"
+        print_color "green" "Assets found. Written list at ${output_path}/assets/${repo//\"/}-assets-list.csv"
     fi
 
-done < <(cut -d',' -f1,3 "$output_path/${address//:[0-9]*/}-repositories-list.csv")
+done < <(cut -d',' -f1,3 "${output_path}/${address//:[0-9]*/}-repositories-list.csv")
 
 unset IFS

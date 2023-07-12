@@ -17,5 +17,5 @@ function test_https(){
         local https="false"
     fi
 
-    echo "${https}"
+    echo $https
 }
