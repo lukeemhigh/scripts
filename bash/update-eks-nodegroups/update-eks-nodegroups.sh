@@ -76,7 +76,9 @@ fi
 
 print_color "blue" "Checking ${cluster} managed nodegroups..."
 
-mapfile -t node_list < <(eksctl get nodegroup --profile "${profile}" --cluster "${cluster}" -o json 2> /dev/null | jq -r '.[] | . as $e | [$e.Name] | @csv')
+mapfile -t node_list < <(eksctl get nodegroup --profile "${profile}" \
+    --cluster "${cluster}" -o json 2> /dev/null |\
+    jq -r '.[] | . as $e | [$e.Name] | @csv')
 
 declare -a node_list
 
@@ -106,27 +108,36 @@ for node in "${node_list[@]}"; do
             if [ "$max_size" -lt 2 ]; then
                 print_color "blue" "Scaling up nodegroup ${node//\"/} capacity..."
                 s_flag=1
-                eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( ++desired_capacity )) --nodes-min "$min_size" --nodes-max $(( ++max_size ))
+                eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
+                --name "${node//\"/}" --nodes $(( ++desired_capacity )) \
+                --nodes-min "$min_size" --nodes-max $(( ++max_size ))
             else
                 print_color "blue" "Scaling up nodegroup ${node//\"/} capacity..."
                 s_flag=2
-                eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( ++desired_capacity )) --nodes-min "$min_size" --nodes-max "$max_size"
+                eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
+                --name "${node//\"/}" --nodes $(( ++desired_capacity )) \
+                --nodes-min "$min_size" --nodes-max "$max_size"
             fi
         fi
 
         # --------------------------- Nodegroups Upgrade ---------------------------
 
         print_color "blue" "Upgrading ${node//\"/}..."
-        eksctl upgrade nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --force-upgrade
+        eksctl upgrade nodegroup --profile "$profile" --cluster "$cluster" \
+        --name "${node//\"/}" --force-upgrade
 
         # If nodegroup was scaled up, bring it down to the original capacity
 
         if [ "${s_flag}" -eq 1 ]; then
             print_color "blue" "Scaling down ${node//\"/}..."
-            eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( --desired_capacity )) --nodes-min "$min_size" --nodes-max $(( --max_size ))
+            eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
+            --name "${node//\"/}" --nodes $(( --desired_capacity )) \
+            --nodes-min "$min_size" --nodes-max $(( --max_size ))
         elif [ "${s_flag}" -eq 2 ]; then
             print_color "blue" "Scaling down ${node//\"/}..."
-            eksctl scale nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" --nodes $(( --desired_capacity )) --nodes-min "$min_size" --nodes-max "${max_size}"
+            eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
+            --name "${node//\"/}" --nodes $(( --desired_capacity )) \
+            --nodes-min "$min_size" --nodes-max "${max_size}"
         fi
 
         print_color "green" "${node//\"/} succesfully upgraded"
