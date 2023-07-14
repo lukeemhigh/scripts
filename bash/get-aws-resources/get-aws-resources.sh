@@ -13,7 +13,7 @@
 
 # shellcheck source=/dev/null
 
-source "$HOME/git-repos/scripts/bash/useful-functions/print-color.sh"
+source "${HOME}/git-repos/scripts/bash/useful-functions/print-color.sh"
 
 # --------------------------- Declaring Arrays ---------------------------
 
@@ -68,12 +68,12 @@ services_list=(
 
 date=$(date +%F_%T)
 
-output_path="$HOME/tmp/get-aws-resources-$date"
+output_path="${HOME}/tmp/get-aws-resources-${date}"
 
 # --------------------------- Writing .csv Files ---------------------------
 
-mkdir -p "$output_path/data"
-mkdir -p "$output_path/output"
+mkdir -p "${output_path}/data"
+mkdir -p "${output_path}/output"
 
 for region in "${region_list[@]}"; do
 
@@ -81,21 +81,21 @@ for region in "${region_list[@]}"; do
 
     for service in "${services_list[@]}"; do
 
-        filename="$region-$service.csv"
+        filename="${region}-${service}.csv"
 
         aws resourcegroupstaggingapi get-resources \
             --resource-type-filters "$service" \
             --region="$region" \
             --output json 2> /dev/null | \
             jq -r '.ResourceTagMappingList[] | . as $e | .Tags[] | [$e.ResourceARN, .Key, .Value] | @csv' \
-            >> "$output_path/data/$filename"
+            >> "${output_path}/data/${filename}"
 
-        if [ ! -s "$output_path/data/$filename" ]; then
-            rm -f "$output_path/data/$filename"
+        if [ ! -s "${output_path}/data/${filename}" ]; then
+            rm -f "${output_path}/data/${filename}"
             print_color "red" "No $service services found in $region"
         else
-            sed -i -r "s/^/\"$region\",\"$service\",/g" "$output_path/data/$filename"
-            print_color "green" "Check completed, data witten into $output_path/data/$filename"
+            sed -i -r "s/^/\"$region\",\"$service\",/g" "${output_path}/data/${filename}"
+            print_color "green" "Check completed, data witten into ${output_path}/data/${filename}"
         fi
     done
 done
