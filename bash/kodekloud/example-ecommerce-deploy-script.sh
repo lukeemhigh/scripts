@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Automates the deployment of Kodekloud ecommerce application
 # Author: Luca Giugliardi

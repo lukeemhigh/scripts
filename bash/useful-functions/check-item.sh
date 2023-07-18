@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Author: Luca Giugliardi
 # Email: luca.giugliardi@gmail.com

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Simple script to generate an xlsx file containing in-use aws resources with their respective tags,
 # grouped by region and service type.
