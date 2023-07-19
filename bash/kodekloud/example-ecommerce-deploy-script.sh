@@ -3,6 +3,8 @@
 # Automates the deployment of Kodekloud ecommerce application
 # Author: Luca Giugliardi
 
+# ----------------------------- Shell Options ----------------------------
+set -o pipefail
 
 # -------------------------------- Functions -----------------------------------
 

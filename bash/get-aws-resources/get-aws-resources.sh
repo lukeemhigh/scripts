@@ -9,6 +9,9 @@
 # Author: Luca Giugliardi
 # Email: luca.giugliardi@gmail.com
 
+# ----------------------------- Shell Options ----------------------------
+set -o pipefail
+
 # --------------------------- Import Functions ---------------------------
 
 # shellcheck source=/dev/null
