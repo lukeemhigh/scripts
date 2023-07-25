@@ -6,6 +6,7 @@
 # Email: luca.giugliardi@gmail.com
 
 # ----------------------------- Shell Options ----------------------------
+set -e
 set -o pipefail
 
 # --------------------------- Import Functions ---------------------------
@@ -131,16 +132,16 @@ for node in "${node_list[@]}"; do
 
         # If nodegroup was scaled up, bring it down to the original capacity
 
-        if [ "${s_flag}" -eq 1 ]; then
+        if [ "$s_flag" -eq 1 ]; then
             print_color "blue" "Scaling down ${node//\"/}..."
             eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
             --name "${node//\"/}" --nodes $(( --desired_capacity )) \
             --nodes-min "$min_size" --nodes-max $(( --max_size ))
-        elif [ "${s_flag}" -eq 2 ]; then
+        elif [ "$s_flag" -eq 2 ]; then
             print_color "blue" "Scaling down ${node//\"/}..."
             eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
             --name "${node//\"/}" --nodes $(( --desired_capacity )) \
-            --nodes-min "$min_size" --nodes-max "${max_size}"
+            --nodes-min "$min_size" --nodes-max "$max_size"
         fi
 
         print_color "green" "${node//\"/} succesfully upgraded"
