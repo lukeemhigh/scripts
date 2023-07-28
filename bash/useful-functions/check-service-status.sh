@@ -9,7 +9,7 @@
 # Arguments:
 #   Service. eg: httpd, firewalld
 #####################################
-function check_service_status(){
+check_service_status(){
     is_service_active=$(sudo systemctl is-active "$1")
     if [ "$is_service_active" = "active" ]; then
         print_color "green" "$1 service is active"

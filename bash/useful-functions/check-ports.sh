@@ -9,7 +9,7 @@
 # Arguments:
 #   Port. eg: 3306, 80
 ##########################################
-function check_ports(){
+check_ports(){
     firewalld_ports=$(sudo firewall-cmd --list-all --zone=public | grep ports)
     if [[ "$firewalld_ports" = *"$1"* ]]; then
         print_color "green" "Port $1 configured"

@@ -9,7 +9,7 @@
 #   Page.
 #   Item. eg: Laptop, VR, Watch
 ##########################################
-function check_item(){
+check_item(){
     if [[ $1 = *$2* ]]; then
         print_color "green" "Item $2 present on the web page"
     else

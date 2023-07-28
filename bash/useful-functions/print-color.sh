@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-#
 # Author: Luca Giugliardi
 # Email: luca.giugliardi@gmail.com
-
+#
 #####################################
 # Prints a message in a given color
 # Arguments:
 #   Color. eg: green, red, blue
 #####################################
-function print_color(){
+print_color(){
     NC='\033[0m' # No Color
     case $1 in
         "green") COLOR="\033[0;32m" ;;

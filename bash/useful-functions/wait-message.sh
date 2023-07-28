@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
+# Author: Luca Giugliardi
+# Email: luca.giugliardi@gmail.com
+#
+#####################################
+# Prints a rotating bar and a message
+# in a given color for a given period
+# of time 
+# Arguments:
+#   Color. eg: green, red, blue
+#   Time. ds, or n/10th of a second
+#####################################
 
-function wait_message() {
+wait_message() {
     spin='\|/-'
     i=0
     NC='[0m' # No Color
