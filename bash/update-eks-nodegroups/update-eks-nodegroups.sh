@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#
+
 # Automates eks nodegroups update
 #
 # Author Luca Giugliardi
