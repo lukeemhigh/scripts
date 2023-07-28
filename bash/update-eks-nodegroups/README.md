@@ -16,8 +16,8 @@ in `${HOME}/.aws/config` and provide a TUI selection menu if more than one confi
 
 To perform the update, the script makes use of the following tools, so please make sure thath you have installed them:
 
-- `aws-cli`: (Installation Guide)[https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html]
-- `eksctl`: (Installation Guide)[https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html]
+- `aws-cli`: [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- `eksctl`: [Installation Guide](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
 - `jq`: Install through your package manager.
-- `fzf`: Install through your package manager, or from (GitHub)[https://github.com/junegunn/fzf].
+- `fzf`: Install through your package manager, or from [GitHub](https://github.com/junegunn/fzf).
 
