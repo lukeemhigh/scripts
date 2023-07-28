@@ -6,8 +6,7 @@
 # Email: luca.giugliardi@gmail.com
 
 # ----------------------------- Shell Options ----------------------------
-set -e
-set -o pipefail
+set -euo pipefail
 
 # --------------------------- Import Functions ---------------------------
 
