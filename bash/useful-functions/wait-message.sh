@@ -13,7 +13,7 @@
 
 wait_message() {
     spin='\|/-'
-    i=0
+    local i=0
     NC='[0m' # No Color
     case $1 in
         "green") COLOR="[0;32m" ;;
