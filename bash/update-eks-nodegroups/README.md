@@ -14,7 +14,7 @@ in `${HOME}/.aws/config` and provide a TUI selection menu if more than one confi
 
 ## Requirements
 
-To perform the update, the script makes use of the following tools, so please make sure thath you have installed them:
+To perform the update, the script makes use of the following tools, so please make sure that you have installed them:
 
 - `aws-cli`: [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 - `eksctl`: [Installation Guide](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
