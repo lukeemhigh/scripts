@@ -75,31 +75,33 @@ if [[ -z "$profile" ]]; then
     fi
 fi
 
+# ------------------------- Variable & Constants -------------------------
+ 
+cluster_data=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" -o json 2>/dev/null)
+readonly cluster_data
+number_of_nodes=$(echo "$cluster_data" | jq '. | length')
+readonly number_of_nodes
 
 # --------------------------- Nodegroups Check ---------------------------
 
 print_color "blue" "Checking ${cluster} managed nodegroups..."
 
-mapfile -t node_list < <(eksctl get nodegroup --profile "${profile}" \
-    --cluster "${cluster}" -o json 2> /dev/null |\
-    jq -r '.[] | . as $e | [$e.Name] | @csv')
-
-declare -a node_list
 
 # TODO: Use parallel instead of a for loop to speed up the upgrade (it will probably require to rewrite the upgrade part as a function..)
 
-for node in "${node_list[@]}"; do
+for ((index=0;index<number_of_nodes;index++)); do
 
-    s_flag=0
-
-    print_color "blue" "Processing ${node//\"/}..."
-    data=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node//\"/}" -o json)
+    node_data=$(echo "$cluster_data" | jq -r --argjson index "$index" '.[$index]')
     
-    status=$(echo "$data" | jq -r '.[] | . as $e | [$e.Status] | @csv')
-    max_size=$(echo "$data" | jq -r '.[] | . as $e | [$e.MaxSize] | @csv')
-    min_size=$(echo "$data" | jq -r '.[] | . as $e | [$e.MinSize] | @csv')
-    desired_capacity=$(echo "$data" | jq -r '.[] | . as $e | [$e.DesiredCapacity] | @csv')
+    node_name=$(echo "$node_data" | jq -r '. as $e | [$e.Name] | @csv')
+    status=$(echo "$node_data" | jq -r '. as $e | [$e.Status] | @csv')
+    max_size=$(echo "$node_data" | jq -r '. as $e | [$e.MaxSize] | @csv')
+    min_size=$(echo "$node_data" | jq -r '. as $e | [$e.MinSize] | @csv')
+    desired_capacity=$(echo "$node_data" | jq -r '. as $e | [$e.DesiredCapacity] | @csv')
+    is_scaled=0
 
+    print_color "blue" "Processing ${node_name//\"/}..."
+    
     # Checking nodegroup status and capacity, scaling up if necessary
 
     if [[ "${status//\"/}" == "ACTIVE" ]]; then
@@ -110,43 +112,56 @@ for node in "${node_list[@]}"; do
 
         if [ "$desired_capacity" -lt 2 ]; then
             if [ "$max_size" -lt 2 ]; then
-                print_color "blue" "Scaling up nodegroup ${node//\"/} capacity..."
-                s_flag=1
+                print_color "blue" "Scaling up nodegroup ${node_name//\"/} capacity..."
+                is_scaled=1
                 eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-                --name "${node//\"/}" --nodes $(( ++desired_capacity )) \
-                --nodes-min "$min_size" --nodes-max $(( ++max_size ))
+                --name "${node_name//\"/}" --nodes 2 \
+                --nodes-min "$min_size" --nodes-max 2
             else
-                print_color "blue" "Scaling up nodegroup ${node//\"/} capacity..."
-                s_flag=2
+                print_color "blue" "Scaling up nodegroup ${node_name//\"/} capacity..."
+                is_scaled=2
                 eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-                --name "${node//\"/}" --nodes $(( ++desired_capacity )) \
+                --name "${node_name//\"/}" --nodes 2 \
                 --nodes-min "$min_size" --nodes-max "$max_size"
             fi
         fi
 
+        while [[ $(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node_name//\"/}" -o json | jq -r '.[] | . as $e | [$e.Status] | @csv' | sed 's/"//g') == 'UPDATING' ]]; do
+            print_color "blue" "Waiting for node ${node_name//\"/} to be ready.."
+            sleep 10
+        done
+        
         # --------------------------- Nodegroups Upgrade ---------------------------
 
-        print_color "blue" "Upgrading ${node//\"/}..."
+        print_color "blue" "Upgrading ${node_name//\"/}..."
         eksctl upgrade nodegroup --profile "$profile" --cluster "$cluster" \
-        --name "${node//\"/}" --force-upgrade
+        --name "${node_name//\"/}" --force-upgrade
 
-        # If nodegroup was scaled up, bring it down to the original capacity
+            # If nodegroup was scaled up, bring it down to the original capacity, getting it from readonly constant $cluster_data for good measure
 
-        if [ "$s_flag" -eq 1 ]; then
-            print_color "blue" "Scaling down ${node//\"/}..."
-            eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-            --name "${node//\"/}" --nodes $(( --desired_capacity )) \
-            --nodes-min "$min_size" --nodes-max $(( --max_size ))
-        elif [ "$s_flag" -eq 2 ]; then
-            print_color "blue" "Scaling down ${node//\"/}..."
-            eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-            --name "${node//\"/}" --nodes $(( --desired_capacity )) \
-            --nodes-min "$min_size" --nodes-max "$max_size"
-        fi
+            case $is_scaled in
+                0)
+                    ;;
+                1)
+                    print_color "blue" "Scaling down ${node_name//\"/}..."
+                    eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
+                    --name "${node_name//\"/}" --nodes "$(echo "$cluster_data" | jq -r --argjson index "$index" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
+                    --nodes-min "$min_size" --nodes-max "$(echo "$cluster_data" | jq -r --argjson index "$index" '.[$index] | . as $e | [$e.MaxSize] | @csv' | sed 's/"//g')"
+                    ;;
+                2)
+                    print_color "blue" "Scaling down ${node_name//\"/}..."
+                    eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
+                    --name "${node_name//\"/}" --nodes "$(echo "$cluster_data" | jq -r --argjson index "$index" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
+                    --nodes-min "$min_size" --nodes-max "$max_size"
+                    ;;
+                *)
+                    exit 1
+                    ;;
+            esac
 
-        print_color "green" "${node//\"/} succesfully upgraded"
+        print_color "green" "${node_name//\"/} succesfully upgraded"
 
     else
-        print_color "red" "Skipped nodegroup ${node//\"/} due to its status"
+        print_color "red" "Skipped nodegroup ${node_name//\"/} due to its status"
     fi
 done
