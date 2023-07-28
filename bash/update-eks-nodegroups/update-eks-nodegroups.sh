@@ -48,8 +48,7 @@ done
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
 
 if [[ -z "$profile" ]]; then
-    profile=$(cat "${HOME}/.aws/config" |\
-    grep -E '\[[[:alnum:]]+\]' |\
+    profile=$(grep -E '\[[[:alnum:]]+\]' "${HOME}/.aws/config" |\
     sed 's/\[\(.*\)\]/\1/' |\
     fzf --height=30% \
     --layout=reverse \
