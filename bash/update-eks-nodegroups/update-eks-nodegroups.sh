@@ -45,6 +45,16 @@ while true; do
     esac
 done
 
+# ------------------------- Guard Clauses -------------------------
+
+# Check for needed tools installation
+
+for tool in aws eksctl jq fzf; do
+    if ! which "$tool" >/dev/null; then
+        print_color "red" "[ERROR]: Cannot find ${tool}, please make sure it's installed before running the script"
+        exit 1
+    fi
+done
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
 
 if [[ -z "$profile" ]]; then
