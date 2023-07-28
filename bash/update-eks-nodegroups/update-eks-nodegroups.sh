@@ -55,16 +55,31 @@ for tool in aws eksctl jq fzf; do
         exit 1
     fi
 done
+
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
 
 if [[ -z "$profile" ]]; then
     if [[ -e "${HOME}/.aws/config" ]]; then
-        profile=$(grep -E '\[[[:alnum:]]+\]' "${HOME}/.aws/config" |\
-        sed 's/\[\(.*\)\]/\1/' |\
-        fzf --height=30% \
-        --layout=reverse \
-        --border \
-        --prompt 'Which AWS profile do you want to use? ')
+        config=$(grep -E '\[[[:alnum:]]+\]' "${HOME}/.aws/config" |\
+        sed 's/\[\(.*\)\]/\1/')
+        config_number=$(echo "$config" | wc -l)
+        
+        case $config_number in
+            0)
+                print_color "red" "[ERROR]: Invalid config file" 1>&2
+                exit 1
+                ;;
+            1)
+               profile=${config}
+               ;;
+            *)
+               profile=$(echo "$config" |\
+               fzf --height=30% \
+               --layout=reverse \
+               --border \
+               --prompt 'Which AWS profile do you want to use? ')
+               ;;
+        esac
         
         cluster_list=$(aws --profile "$profile" eks list-clusters |\
         jq -r '.clusters | @csv' |\
