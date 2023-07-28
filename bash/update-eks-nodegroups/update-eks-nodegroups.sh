@@ -6,6 +6,7 @@
 # Email: luca.giugliardi@gmail.com
 
 # ----------------------------- Shell Options ----------------------------
+
 set -eo pipefail
 
 # --------------------------- Import Functions ---------------------------
@@ -98,7 +99,7 @@ if [[ -z "$profile" ]]; then
             cluster=$cluster_list
         fi
     else
-        print_color "red" "[ERROR]: Cannot fint ${HOME}/.aws/config, either specify your profile by hand, or check your aws-cli config files location" 1>&2
+        print_color "red" "[ERROR]: Cannot find ${HOME}/.aws/config, either specify your profile by hand, or check your aws-cli config files location" 1>&2
         exit 1
     fi
 fi
@@ -143,14 +144,18 @@ for ((i=0;i<number_of_nodes;i++)); do
                 print_color "blue" "Scaling up nodegroup ${node_name//\"/} capacity..."
                 is_scaled=1
                 eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-                --name "${node_name//\"/}" --nodes 2 \
-                --nodes-min "$min_size" --nodes-max 2
+                --name "${node_name//\"/}" \
+                --nodes 2 \
+                --nodes-min "$min_size" \
+                --nodes-max 2
             else
                 print_color "blue" "Scaling up nodegroup ${node_name//\"/} capacity..."
                 is_scaled=2
                 eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-                --name "${node_name//\"/}" --nodes 2 \
-                --nodes-min "$min_size" --nodes-max "$max_size"
+                --name "${node_name//\"/}" \
+                --nodes 2 \
+                --nodes-min "$min_size" \
+                --nodes-max "$max_size"
             fi
         fi
 
@@ -173,14 +178,18 @@ for ((i=0;i<number_of_nodes;i++)); do
                 1)
                     print_color "blue" "Scaling down ${node_name//\"/}..."
                     eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-                    --name "${node_name//\"/}" --nodes "$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
-                    --nodes-min "$min_size" --nodes-max "$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index] | . as $e | [$e.MaxSize] | @csv' | sed 's/"//g')"
+                    --name "${node_name//\"/}" \
+                    --nodes "$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
+                    --nodes-min "$min_size" \
+                    --nodes-max "$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index] | . as $e | [$e.MaxSize] | @csv' | sed 's/"//g')"
                     ;;
                 2)
                     print_color "blue" "Scaling down ${node_name//\"/}..."
                     eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-                    --name "${node_name//\"/}" --nodes "$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
-                    --nodes-min "$min_size" --nodes-max "$max_size"
+                    --name "${node_name//\"/}" \
+                    --nodes "$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
+                    --nodes-min "$min_size" \
+                    --nodes-max "$max_size"
                     ;;
                 *)
                     exit 1
