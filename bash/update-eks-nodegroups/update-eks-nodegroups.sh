@@ -6,7 +6,7 @@
 # Email: luca.giugliardi@gmail.com
 
 # ----------------------------- Shell Options ----------------------------
-set -euo pipefail
+set -eo pipefail
 
 # --------------------------- Import Functions ---------------------------
 
@@ -19,7 +19,7 @@ source "${HOME}/git-repos/scripts/bash/useful-functions/print-color.sh"
 TEMP=$(getopt -o p:c: --long profile:,cluster: -n 'test.sh' -- "$@")
 
 if [ $? -ne 0 ]; then
-    echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME]"
+    echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME]" 1>&2
     exit 1
 fi
 
@@ -39,7 +39,7 @@ while true; do
             shift
             break ;;
         *)
-            echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME]"
+            echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME]" 1>&2
             exit 1
             ;;
     esac
@@ -48,28 +48,33 @@ done
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
 
 if [[ -z "$profile" ]]; then
-    profile=$(grep -E '\[[[:alnum:]]+\]' "${HOME}/.aws/config" |\
-    sed 's/\[\(.*\)\]/\1/' |\
-    fzf --height=30% \
-    --layout=reverse \
-    --border \
-    --prompt 'Which AWS profile do you want to use? ')
-    
-    cluster_list=$(aws --profile "$profile" eks list-clusters |\
-    jq -r '.clusters | @csv' |\
-    tr ',' '\n' |\
-    sed 's/\"\(.*\)\"/\1/')
-
-    cluster_number=$(echo "$cluster_list" | wc -l)
-
-    if [ "${cluster_number}" -gt 1 ]; then
-        cluster=$(echo "$cluster_list" |\
+    if [[ -e "${HOME}/.aws/config" ]]; then
+        profile=$(grep -E '\[[[:alnum:]]+\]' "${HOME}/.aws/config" |\
+        sed 's/\[\(.*\)\]/\1/' |\
         fzf --height=30% \
         --layout=reverse \
         --border \
-        --prompt 'Which EKS cluster do you want to upgrade? ')
+        --prompt 'Which AWS profile do you want to use? ')
+        
+        cluster_list=$(aws --profile "$profile" eks list-clusters |\
+        jq -r '.clusters | @csv' |\
+        tr ',' '\n' |\
+        sed 's/\"\(.*\)\"/\1/')
+
+        cluster_number=$(echo "$cluster_list" | wc -l)
+
+        if [ "${cluster_number}" -gt 1 ]; then
+            cluster=$(echo "$cluster_list" |\
+            fzf --height=30% \
+            --layout=reverse \
+            --border \
+            --prompt 'Which EKS cluster do you want to upgrade? ')
+        else
+            cluster=$cluster_list
+        fi
     else
-        cluster=$cluster_list
+        print_color "red" "[ERROR]: Cannot fint ${HOME}/.aws/config, either specify your profile by hand, or check your aws-cli config files location" 1>&2
+        exit 1
     fi
 fi
 
@@ -82,14 +87,14 @@ readonly number_of_nodes
 
 # --------------------------- Nodegroups Check ---------------------------
 
-print_color "blue" "Checking ${cluster} managed nodegroups..."
+print_color "puprle" "Checking ${cluster} managed nodegroups..."
 
 
 # TODO: Use parallel instead of a for loop to speed up the upgrade (it will probably require to rewrite the upgrade part as a function..)
 
-for ((index=0;index<number_of_nodes;index++)); do
+for ((i=0;i<number_of_nodes;i++)); do
 
-    node_data=$(echo "$cluster_data" | jq -r --argjson index "$index" '.[$index]')
+    node_data=$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index]')
     
     node_name=$(echo "$node_data" | jq -r '. as $e | [$e.Name] | @csv')
     status=$(echo "$node_data" | jq -r '. as $e | [$e.Status] | @csv')
@@ -103,10 +108,10 @@ for ((index=0;index<number_of_nodes;index++)); do
     # Checking nodegroup status and capacity, scaling up if necessary
 
     if [[ "${status//\"/}" == "ACTIVE" ]]; then
-        print_color "green" "Nodegroup status is ${status//\"/}"
-        print_color "green" "Nodegroup max size is ${max_size}"
-        print_color "green" "Nodegroup min size is ${min_size}"
-        print_color "green" "Nodegroup desired capacity is ${desired_capacity}"
+        print_color "yellow" "[DEBUG]: Nodegroup status is ${status//\"/}"
+        print_color "yellow" "[DEBUG]: Nodegroup max size is ${max_size}"
+        print_color "yellow" "[DEBUG]: Nodegroup min size is ${min_size}"
+        print_color "yellow" "[DEBUG]: Nodegroup desired capacity is ${desired_capacity}"
 
         if [ "$desired_capacity" -lt 2 ]; then
             if [ "$max_size" -lt 2 ]; then
@@ -143,13 +148,13 @@ for ((index=0;index<number_of_nodes;index++)); do
                 1)
                     print_color "blue" "Scaling down ${node_name//\"/}..."
                     eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-                    --name "${node_name//\"/}" --nodes "$(echo "$cluster_data" | jq -r --argjson index "$index" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
-                    --nodes-min "$min_size" --nodes-max "$(echo "$cluster_data" | jq -r --argjson index "$index" '.[$index] | . as $e | [$e.MaxSize] | @csv' | sed 's/"//g')"
+                    --name "${node_name//\"/}" --nodes "$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
+                    --nodes-min "$min_size" --nodes-max "$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index] | . as $e | [$e.MaxSize] | @csv' | sed 's/"//g')"
                     ;;
                 2)
                     print_color "blue" "Scaling down ${node_name//\"/}..."
                     eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-                    --name "${node_name//\"/}" --nodes "$(echo "$cluster_data" | jq -r --argjson index "$index" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
+                    --name "${node_name//\"/}" --nodes "$(echo "$cluster_data" | jq -r --argjson index "$i" '.[$index] | . as $e | [$e.DesiredCapacity] | @csv' | sed 's/"//g')" \
                     --nodes-min "$min_size" --nodes-max "$max_size"
                     ;;
                 *)
@@ -157,9 +162,9 @@ for ((index=0;index<number_of_nodes;index++)); do
                     ;;
             esac
 
-        print_color "green" "${node_name//\"/} succesfully upgraded"
+        print_color "[INFO]: green" "${node_name//\"/} succesfully upgraded"
 
     else
-        print_color "red" "Skipped nodegroup ${node_name//\"/} due to its status"
+        print_color "red" "[ERROR]: Skipped nodegroup ${node_name//\"/} due to its status" 1>&2 
     fi
 done
