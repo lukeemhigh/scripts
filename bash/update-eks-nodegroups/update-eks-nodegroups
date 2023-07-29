@@ -17,7 +17,7 @@ source "${HOME}/git-repos/scripts/bash/useful-functions/print-color.sh"
 
 export -f  print_color
 
-# ----------------------------- Optargs -----------------------------
+# ------------------------------- Optargs --------------------------------
 
 TEMP=$(getopt -o p:c:j:v --long profile:,cluster:,jobs:,verbose -n 'update-eks-nodegroups' -- "$@")
 
