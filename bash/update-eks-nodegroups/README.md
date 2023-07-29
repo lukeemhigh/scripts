@@ -3,7 +3,8 @@
 Wrapper for `eksctl` in bash.
 This script aims to simplify (by automating it) the update of AWS EKS managed nodegroups to the latest AMI version.
 The script will check if the nodegroups in your cluster have less than two nodes, and temporarily scale them up accordingly while performing the update,
-to avoid service interruptions.
+to avoid service interruptions. Make sure to chek that you have set values for `maxUnavailable` or `maxUnavailablePercentage` in your nodegroups `updateConfig`,
+otherwise this step is rendered useless, otherwise this step is rendered useless!
 After the update is completed, every scaled-up nodegroup is scaled down to its original capacity.
 
 ## Arguments
