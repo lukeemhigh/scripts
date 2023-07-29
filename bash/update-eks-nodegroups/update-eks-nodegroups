@@ -60,8 +60,7 @@ done
 # ------------------------------ Functions -------------------------------
 
 check_utils() {
-    local utils
-    utils="$(cat utils)"
+    local utils=("$@")
     for util in "${utils[@]}"; do
         if ! which "$util" >/dev/null 2>&1; then
             print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Cannot find ${util}, please make sure it's installed before running the script"
@@ -278,7 +277,7 @@ export -f main
 
 # Check for needed tools installation
 
-check_utils
+check_utils aws eksctl jq fzf parallel
 
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
  
