@@ -11,10 +11,10 @@ After the update is completed, every scaled-up nodegroup is scaled down to its o
 
 `update-eks-nodegroups` takes in four arguments:
 
-- -p|--profile) The aws-cli profile you want to use
-- -c|--cluser) The eks cluster you want to perform the upgrade in.
-- -j|--jobs) The number of concurrent jobs to run (default is 2).
-- -v|--verbose) Activates some very minor debug info logging.
+- `-p`|`--profile`) The aws-cli profile you want to use
+- `-c`|`--cluser`) The eks cluster you want to perform the upgrade in.
+- `-j`|`--jobs`) The number of concurrent jobs to run (default is 2).
+- `-v`|`--verbose`) Activates some very minor debug info logging.
 
 If one of the first two aforementioned arguments are not provided, the script will check for an existing aws-cli configuration
 in `${HOME}/.aws/config` and provide a TUI selection menu if more than one configuration is found.
