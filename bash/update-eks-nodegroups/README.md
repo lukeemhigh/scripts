@@ -1,18 +1,21 @@
 # Descrption
 
 Wrapper for `eksctl` in bash.
-This script aims to simplify (by automating it) the update of eks managed nodegroups to the latest AMI version.
+This script aims to simplify (by automating it) the update of AWS EKS managed nodegroups to the latest AMI version.
+The script will check if the nodegroups in your cluster have less than two nodes, and temporarily scale them up accordingly while performing the update,
+to avoid service interruptions.
+After the update is completed, every scaled-up nodegroup is scaled down to its original capacity.
 
 ## Arguments
 
-`update-eks-nodegroups` takes in two arguments:
+`update-eks-nodegroups` takes in four arguments:
 
 - -p|--profile) The aws-cli profile you want to use
 - -c|--cluser) The eks cluster you want to perform the upgrade in.
-- -j|--jobs) The number of concurrent jobs to run.
+- -j|--jobs) The number of concurrent jobs to run (default is 2).
 - -v|--verbose) Activates some very minor debug info logging.
 
-If the aforementioned arguments are not provided, the script will check for an existing aws-cli configuration
+If one of the first two aforementioned arguments are not provided, the script will check for an existing aws-cli configuration
 in `${HOME}/.aws/config` and provide a TUI selection menu if more than one configuration is found.
 
 ## Requirements
