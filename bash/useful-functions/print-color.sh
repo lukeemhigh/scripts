@@ -18,5 +18,5 @@ print_color(){
         "white") COLOR="\033[0m" ;;
         *) COLOR="\033[0m" ;;
     esac
-    echo -e "${COLOR} $2 ${NC}"
+    echo -e "${COLOR}${2}${NC}"
 }
