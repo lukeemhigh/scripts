@@ -250,7 +250,7 @@ main() {
         print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Upgrading ${node_name//\"/}..."
         upgrade_nodegroup "$node_name" "$profile" "$cluster"
 
-        # If nodegroup was scaled up, bring it down to the original capacity, getting it from readonly constant $cluster_data for good measure
+        # If nodegroup was scaled up, bring it down to the original capacity, getting it from readonly constant $node_data for good measure
 
         case $is_scaled in
             0)
@@ -292,7 +292,7 @@ else
     cluster=$(get_cluster "$profile")
 fi
 
-# ------------------------- Variable Assignment -------------------------
+# ------------------------- Variables Assignment -------------------------
  
 utils=("aws" "eksctl" "jq" "fzf" "parallel")
 number_of_nodes=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" -o json 2>/dev/null | jq '. | length')
