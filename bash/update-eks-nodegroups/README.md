@@ -20,4 +20,5 @@ To perform the update, the script makes use of the following tools, so please ma
 - `eksctl`: [Installation Guide](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
 - `jq`: Install through your package manager.
 - `fzf`: Install through your package manager, or from [GitHub](https://github.com/junegunn/fzf).
+- `parallel`: Install it through you package manager.
 
