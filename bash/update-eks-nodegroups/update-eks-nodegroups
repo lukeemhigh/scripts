@@ -127,40 +127,47 @@ upgrade_nodegroup() {
 export -f upgrade_nodegroup
 
 get_profile() {
-    local config
-    local config_number
+    local profiles
+    local profiles_number
     local profile
     
-    if [[ -e "${HOME}/.aws/config" ]]; then
-        config=$(grep -E '\[[[:alnum:]]+\]' "${HOME}/.aws/config" |\
-        sed 's/\[\(.*\)\]/\1/')
-        config_number=$(echo "$config" | wc -l)
+        profiles=$(aws configure list-profiles)
+        profiles_number=$(echo "$profiles" | wc -l)
 
-        case $config_number in
+        case $profiles_number in
             0)
                 print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Invalid config file" 1>&2
                 exit 1
                 ;;
             1)
-                profile=${config}
+                profile=${profiles}
                 ;;
             *)
-                profile=$(echo "$config" |\
+                profile=$(echo "$profiles" |\
                 fzf --height=30% \
                 --layout=reverse \
                 --border \
                 --prompt 'Which AWS profile do you want to use? ' || echo "gnappo" && exit 1)
                 ;;
         esac
-    else
-        print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Cannot find ${HOME}/.aws/config, either specify your profile by hand, or check your aws-cli config files location" 1>&2
-        exit 1
-    fi
 
     echo "$profile"
 }
 
 export -f get_profile
+
+check_profile() {
+    local profile="${1}"
+    local profiles
+    profiles=$(aws configure list-profiles)
+
+    if [[ ! "$profiles" =~ $profile  ]]; then
+        print_color "red" "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] No profile selected, aborting" 1>&2
+        exit 1
+    fi
+}
+
+export -f check_profile
 
 get_cluster() {
     local profile="${1}"
@@ -188,6 +195,17 @@ get_cluster() {
 }
 
 export -f get_cluster
+
+get_nodes_number() {
+    local profile="${1}"
+    local cluster="${2}"
+    local number_of_nodes
+
+    number_of_nodes=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" -o json 2>/dev/null | jq '. | length')
+
+    echo "$number_of_nodes"
+}
+ export -f get_nodes_number
 
 main() {
     
@@ -273,29 +291,24 @@ main() {
 
 export -f main
 
-# ---------------------------- Guard Clauses -----------------------------
+# ---------------------------- Pre-Processing -----------------------------
 
 # Check for needed tools installation
 
 check_utils aws eksctl jq fzf parallel
 
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
+
  
 if [[ -z "$profile" ]]; then
     profile=$(get_profile)
 fi
 
-if [[ "$profile" == 'gnappo' ]]; then
-    print_color "red" "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] No profile selected, aborting" 1>&2
-    exit 1
-else
-    cluster=$(get_cluster "$profile")
-fi
+check_profile "$profile"
 
-# ------------------------- Variables Assignment -------------------------
+cluster=$(get_cluster "$profile")
  
-number_of_nodes=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" -o json 2>/dev/null | jq '. | length')
-readonly number_of_nodes
+number_of_nodes=$(get_nodes_number "$profile" "$cluster")
 
 # ------------------------- Nodegroups Upgrade ---------------------------
 
