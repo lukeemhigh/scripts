@@ -306,7 +306,9 @@ fi
 
 check_profile "$profile"
 
-cluster=$(get_cluster "$profile")
+if [[ -z "$cluster" ]]; then
+    cluster=$(get_cluster "$profile")
+fi
  
 number_of_nodes=$(get_nodes_number "$profile" "$cluster")
 
