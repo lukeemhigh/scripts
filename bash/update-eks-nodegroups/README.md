@@ -16,7 +16,7 @@ After the update is completed, every scaled-up nodegroup is scaled down to its o
 - `-j`|`--jobs`) The number of concurrent jobs to run (default is 2).
 - `-v`|`--verbose`) Activates some very minor debug info logging.
 
-If one of the first two aforementioned arguments are not provided, the script will check for an existing aws-cli configuration
+If one of the first two aforementioned arguments is not provided, the script will check for an existing aws-cli configuration
 in `${HOME}/.aws/config` and provide a TUI selection menu if more than one configuration is found.
 
 ## Requirements
@@ -27,5 +27,5 @@ To perform the update, the script makes use of the following tools, so please ma
 - `eksctl`: [Installation Guide](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
 - `jq`: Install through your package manager.
 - `fzf`: Install through your package manager, or from [GitHub](https://github.com/junegunn/fzf).
-- `parallel`: Install it through you package manager.
+- `parallel`: Install it through your package manager.
 

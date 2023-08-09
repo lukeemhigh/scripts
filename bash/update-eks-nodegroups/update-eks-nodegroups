@@ -131,25 +131,25 @@ get_profile() {
     local profiles_number
     local profile
     
-        profiles=$(aws configure list-profiles)
-        profiles_number=$(echo "$profiles" | wc -l)
+    profiles=$(aws configure list-profiles)
+    profiles_number=$(echo "$profiles" | wc -l)
 
-        case $profiles_number in
-            0)
-                print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Invalid config file" 1>&2
-                exit 1
-                ;;
-            1)
-                profile=${profiles}
-                ;;
-            *)
-                profile=$(echo "$profiles" |\
-                fzf --height=30% \
-                --layout=reverse \
-                --border \
-                --prompt 'Which AWS profile do you want to use? ' || echo "gnappo" && exit 1)
-                ;;
-        esac
+    case $profiles_number in
+        0)
+            print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Invalid config file" 1>&2
+            exit 1
+            ;;
+        1)
+            profile=${profiles}
+            ;;
+        *)
+            profile=$(echo "$profiles" |\
+            fzf --height=30% \
+            --layout=reverse \
+            --border \
+            --prompt 'Which AWS profile do you want to use? ' || echo "gnappo" && exit 1)
+            ;;
+    esac
 
     echo "$profile"
 }
@@ -298,7 +298,6 @@ export -f main
 check_utils aws eksctl jq fzf parallel
 
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
-
  
 if [[ -z "$profile" ]]; then
     profile=$(get_profile)
@@ -316,4 +315,4 @@ number_of_nodes=$(get_nodes_number "$profile" "$cluster")
 
 print_color "blue" "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Checking ${cluster} managed nodegroups..."
 
-parallel --jobs "${jobs}" main ::: $(seq 0 $(( number_of_nodes - 1 ))) ::: "${profile}" ::: "${cluster}" ::: "${verbose}"
+parallel --ungroup --jobs "${jobs}" main ::: $(seq 0 $(( number_of_nodes - 1 ))) ::: "${profile}" ::: "${cluster}" ::: "${verbose}"
