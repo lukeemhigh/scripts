@@ -13,14 +13,18 @@ set -o pipefail
 # Arguments:
 #   Color. eg: green, red
 #####################################
-function print_color(){
-    NC='\033[0m' # No Color
-    case $1 in
-        "green") COLOR="‘\033[0;32m" ;;
-        "red") COLOR="‘\033[0;31m" ;;
-        *) COLOR="‘\033[0m" ;;
-    esac
-    echo -e "${COLOR} $2 ${NC}"
+function print_color() {
+	NC='\033[0m' # No Color
+	case $1 in
+	"green")
+		COLOR="‘\033[0;32m"
+		;;
+	"red") COLOR="‘\033[0;31m" ;;
+	*)
+		COLOR="‘\033[0m"
+		;;
+	esac
+	echo -e "${COLOR} $2 ${NC}"
 }
 
 #####################################
@@ -29,14 +33,14 @@ function print_color(){
 # Arguments:
 #   Service. eg: httpd, firewalld
 #####################################
-function check_service_status(){
-    is_service_active=$(sudo systemctl is-active "$1")
-    if [ "$is_service_active" = "active" ]; then
-        print_color "green" "$1 service is active"
-    else
-        print_color "red" "$1 service is not running"
-        exit 1
-    fi
+function check_service_status() {
+	is_service_active=$(sudo systemctl is-active "$1")
+	if [ "$is_service_active" = "active" ]; then
+		print_color "green" "$1 service is active"
+	else
+		print_color "red" "$1 service is not running"
+		exit 1
+	fi
 }
 
 ##########################################
@@ -45,14 +49,14 @@ function check_service_status(){
 # Arguments:
 #   Port. eg: 3306, 80
 ##########################################
-function check_ports(){
-    firewalld_ports=$(sudo firewall-cmd --list-all --zone=public | grep ports)
-    if [[ $firewalld_ports = *"$1"* ]]; then
-        print_color "green" "Port $1 configured"
-    else
-        print_color "red" "Port $1 not configured"
-        exit 1
-    fi
+function check_ports() {
+	firewalld_ports=$(sudo firewall-cmd --list-all --zone=public | grep ports)
+	if [[ $firewalld_ports = *"$1"* ]]; then
+		print_color "green" "Port $1 configured"
+	else
+		print_color "red" "Port $1 not configured"
+		exit 1
+	fi
 }
 
 ##########################################
@@ -61,12 +65,12 @@ function check_ports(){
 #   Page.
 #   Item. eg: Laptop, VR, Watch
 ##########################################
-function check_item(){
-    if [[ $1 = *$2* ]]; then
-        print_color "green" "Item $2 present on the web page"
-    else
-        print_color "red" "Item $2 not present on the web page"
-    fi
+function check_item() {
+	if [[ $1 = *$2* ]]; then
+		print_color "green" "Item $2 present on the web page"
+	else
+		print_color "red" "Item $2 not present on the web page"
+	fi
 }
 
 # --------------------- Database Configuration ---------------------
@@ -78,7 +82,6 @@ sudo systemctl start firewalld.service
 sudo systemctl enable firewalld
 
 check_service_status firewalld
-
 
 # Install and configure MariaDB
 print_color "green" "Installing MariaDB..."
@@ -97,34 +100,33 @@ check_ports 3306
 
 # Configure Database
 print_color "green" "Configuring database..."
-cat > configure-db.sql <<-EOF
-CREATE DATABASE ecomdb;
-CREATE USER 'ecomuser'@'localhost' IDENTIFIED BY 'ecompassword';
-GRANT ALL PRIVILEGES ON *.* TO 'ecomuser'@'localhost';
-FLUSH PRIVILEGES;
+cat >configure-db.sql <<-EOF
+	CREATE DATABASE ecomdb;
+	CREATE USER 'ecomuser'@'localhost' IDENTIFIED BY 'ecompassword';
+	GRANT ALL PRIVILEGES ON *.* TO 'ecomuser'@'localhost';
+	FLUSH PRIVILEGES;
 EOF
 
-sudo mysql < configure-db.sql
+sudo mysql <configure-db.sql
 
 # Load inventory data into Database
 print_color "green" "Loading inventory data into database..."
-cat > db-load-script.sql <<-EOF
-USE ecomdb;
-CREATE TABLE products (id mediumint(8) unsigned NOT NULL auto_increment,Name varchar(255) default NULL,Price varchar(255) default NULL, ImageUrl varchar(255) default NULL,PRIMARY KEY (id)) AUTO_INCREMENT=1;
-INSERT INTO products (Name,Price,ImageUrl) VALUES ("Laptop","100","c-1.png"),("Drone","200","c-2.png"),("VR","300","c-3.png"),("Tablet","50","c-5.png"),("Watch","90","c-6.png"),("Phone Covers","20","c-7.png"),("Phone","80","c-8.png"),("Laptop","150","c-4.png");
+cat >db-load-script.sql <<-EOF
+	USE ecomdb;
+	CREATE TABLE products (id mediumint(8) unsigned NOT NULL auto_increment,Name varchar(255) default NULL,Price varchar(255) default NULL, ImageUrl varchar(255) default NULL,PRIMARY KEY (id)) AUTO_INCREMENT=1;
+	INSERT INTO products (Name,Price,ImageUrl) VALUES ("Laptop","100","c-1.png"),("Drone","200","c-2.png"),("VR","300","c-3.png"),("Tablet","50","c-5.png"),("Watch","90","c-6.png"),("Phone Covers","20","c-7.png"),("Phone","80","c-8.png"),("Laptop","150","c-4.png");
 EOF
 
-sudo mysql < db-load-script.sql
+sudo mysql <db-load-script.sql
 
 mysql_db_results=$(sudo mysql -e "use ecomdb; select * from products;")
 
 if [[ $mysql_db_results = *Laptop* ]]; then
-    print_color "green" "Inventory data loaded"
+	print_color "green" "Inventory data loaded"
 else
-    print_color "red" "Inventory data not loaded"
-    exit 1
+	print_color "red" "Inventory data not loaded"
+	exit 1
 fi
-
 
 # -------------------- Web Server Configuration --------------------
 
@@ -165,7 +167,6 @@ print_color "green" "All set."
 
 web_page=$(curl http://localhost)
 
-for item in Laptop Drone VR Watch
-do
-    check_item "$web_page" "$item"
+for item in Laptop Drone VR Watch; do
+	check_item "$web_page" "$item"
 done

@@ -16,15 +16,15 @@ def jobFullName = Jenkins.instance.getItemByFullName(jobFullNameStr);
 def builds = jobFullName.getBuilds(rs);
 
 if (builds.size()>0) {
-  println("Found ${builds.size()} builds for ${jobFullNameStr}");             
+  	println("Found ${builds.size()} builds for ${jobFullNameStr}");             
 }
 
 builds.each{ b->
 
-  if (reallyDelete) {
-    println("Deleting ${b}");
-    b.delete();
-  } else {
-    println("Found match ${b}");
-  }
+  	if (reallyDelete) {
+    	println("Deleting ${b}");
+    	b.delete();
+  	} else {
+    	println("Found match ${b}");
+  	}
 } 

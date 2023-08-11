@@ -15,278 +15,277 @@ set -o pipefail
 
 source "${HOME}/git-repos/scripts/bash/useful-functions/print-color.sh"
 
-export -f  print_color
+export -f print_color
 
 # ------------------------------- Optargs --------------------------------
 
 TEMP=$(getopt -o p:c:j:v --long profile:,cluster:,jobs:,verbose -n 'update-eks-nodegroups' -- "$@")
 
 if [ $? -ne 0 ]; then
-    echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME] [--jobs | -j] [NUMBER OF CONCURRENT JOBS] [--verbose | -v]" 1>&2
-    exit 1
+	echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME] [--jobs | -j] [NUMBER OF CONCURRENT JOBS] [--verbose | -v]" 1>&2
+	exit 1
 fi
 
 eval set -- "$TEMP"
 
 while true; do
-    case "$1" in
-        -p|--profile)
-            profile="$2"
-            shift 2
-            ;;
-        -c|--cluster)
-            cluster="$2"
-            shift 2
-            ;;
-        -j|--jobs)
-            jobs="${2:=2}" # By default the script will launch 2 concurrent jobs
-            shift 2
-            ;;
-        -v|--verbose)
-            verbose=1
-            shift
-            ;;
-        --)
-            shift
-            break 
-            ;;
-        *)
-            echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME] [--jobs | -j] [NUMBER OF CONCURRENT JOBS] [--verbose | -v]" 1>&2
-            exit 1
-            ;;
-    esac
+	case "$1" in
+	-p | --profile)
+		profile="$2"
+		shift 2
+		;;
+	-c | --cluster)
+		cluster="$2"
+		shift 2
+		;;
+	-j | --jobs)
+		jobs="${2:=2}" # By default the script will launch 2 concurrent jobs
+		shift 2
+		;;
+	-v | --verbose)
+		verbose=1
+		shift
+		;;
+	--)
+		shift
+		break
+		;;
+	*)
+		echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME] [--jobs | -j] [NUMBER OF CONCURRENT JOBS] [--verbose | -v]" 1>&2
+		exit 1
+		;;
+	esac
 done
 
 # ------------------------------ Functions -------------------------------
 
 check_utils() {
-    local utils=("$@")
-    for util in "${utils[@]}"; do
-        if ! which "$util" >/dev/null 2>&1; then
-            print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Cannot find ${util}, please make sure it's installed before running the script"
-            exit 1
-        fi
-    done
+	local utils=("$@")
+	for util in "${utils[@]}"; do
+		if ! which "$util" >/dev/null 2>&1; then
+			print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Cannot find ${util}, please make sure it's installed before running the script"
+			exit 1
+		fi
+	done
 }
 
 export -f check_utils
 
 get_node_data() {
-    local process_id="${1}"
-    local profile="${2}"
-    local cluster="${3}"
-    
-    eksctl get nodegroups --profile "$profile" --cluster "$cluster" -o json 2>/dev/null |\
-    jq -r --argjson index "${process_id}" '.[$index]'
+	local process_id="${1}"
+	local profile="${2}"
+	local cluster="${3}"
+
+	eksctl get nodegroups --profile "$profile" --cluster "$cluster" -o json 2>/dev/null |
+		jq -r --argjson index "${process_id}" '.[$index]'
 }
 
 export -f get_node_data
 
 scale_nodegroup() {
-    local node_name="${1//\"/}"
-    local profile="${2}"
-    local cluster="${3}"
-    local desired_capacity="${4}"
-    local max_size="${5}"
-    
-    eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
-    --name "${node_name//\"/}" \
-    --nodes "$desired_capacity" \
-    --nodes-min "$min_size" \
-    --nodes-max "$max_size" >/dev/null 2>&1
+	local node_name="${1//\"/}"
+	local profile="${2}"
+	local cluster="${3}"
+	local desired_capacity="${4}"
+	local max_size="${5}"
+
+	eksctl scale nodegroup --profile "$profile" --cluster "$cluster" \
+		--name "${node_name//\"/}" \
+		--nodes "$desired_capacity" \
+		--nodes-min "$min_size" \
+		--nodes-max "$max_size" >/dev/null 2>&1
 }
 
 export -f scale_nodegroup
 
 wait_nodegroup() {
-    local process_id="${1}"
-    local node_name="${2//\"/}"
-    local profile="${3}"
-    local cluster="${4}"
-    local i=1
-    
-    while [[ $(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node_name//\"/}" -o json | jq -r '.[] | . as $e | [$e.Status] | @csv' | sed 's/"//g') == 'UPDATING' ]]; do
-        sleep 10
-        (( i++ ))
-    done
+	local process_id="${1}"
+	local node_name="${2//\"/}"
+	local profile="${3}"
+	local cluster="${4}"
+	local i=1
 
-    print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Waited for $(( 10*i ))s"
+	while [[ $(eksctl get nodegroup --profile "$profile" --cluster "$cluster" --name "${node_name//\"/}" -o json | jq -r '.[] | . as $e | [$e.Status] | @csv' | sed 's/"//g') == 'UPDATING' ]]; do
+		sleep 10
+		((i++))
+	done
+
+	print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Waited for $((10 * i))s"
 }
 
 export -f wait_nodegroup
 
 upgrade_nodegroup() {
-    local node_name="${1//\"/}"
-    local profile="${2}"
-    local cluster="${3}"
-    
-    eksctl upgrade nodegroup --profile "$profile" --cluster "$cluster" \
-    --name "${node_name//\"/}" --force-upgrade >/dev/null 2>&1
+	local node_name="${1//\"/}"
+	local profile="${2}"
+	local cluster="${3}"
+
+	eksctl upgrade nodegroup --profile "$profile" --cluster "$cluster" \
+		--name "${node_name//\"/}" --force-upgrade >/dev/null 2>&1
 }
 
 export -f upgrade_nodegroup
 
 get_profile() {
-    local profiles
-    local profiles_number
-    local profile
-    
-    profiles=$(aws configure list-profiles)
-    profiles_number=$(echo "$profiles" | wc -l)
+	local profiles
+	local profiles_number
+	local profile
 
-    case $profiles_number in
-        0)
-            print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Invalid config file" 1>&2
-            exit 1
-            ;;
-        1)
-            profile=${profiles}
-            ;;
-        *)
-            profile=$(echo "$profiles" |\
-            fzf --height=30% \
-            --layout=reverse \
-            --border \
-            --prompt 'Which AWS profile do you want to use? ' || echo "gnappo" && exit 1)
-            ;;
-    esac
+	profiles=$(aws configure list-profiles)
+	profiles_number=$(echo "$profiles" | wc -l)
 
-    echo "$profile"
+	case $profiles_number in
+	0)
+		print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Invalid config file" 1>&2
+		exit 1
+		;;
+	1)
+		profile=${profiles}
+		;;
+	*)
+		profile=$(echo "$profiles" |
+			fzf --height=30% \
+				--layout=reverse \
+				--border \
+				--prompt 'Which AWS profile do you want to use? ' || echo "gnappo" && exit 1)
+		;;
+	esac
+
+	echo "$profile"
 }
 
 export -f get_profile
 
 check_profile() {
-    local profile="${1}"
-    local profiles
-    profiles=$(aws configure list-profiles)
+	local profile="${1}"
+	local profiles
+	profiles=$(aws configure list-profiles)
 
-    if [[ ! "$profiles" =~ $profile  ]]; then
-        print_color "red" "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] No profile selected, aborting" 1>&2
-        exit 1
-    fi
+	if [[ ! "$profiles" =~ $profile ]]; then
+		print_color "red" "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] No profile selected, aborting" 1>&2
+		exit 1
+	fi
 }
 
 export -f check_profile
 
 get_cluster() {
-    local profile="${1}"
-    local cluster_list
-    local cluster_number
+	local profile="${1}"
+	local cluster_list
+	local cluster_number
 
-    cluster_list=$(aws --profile "$profile" eks list-clusters |\
-    jq -r '.clusters | @csv' |\
-    tr ',' '\n' |\
-    sed 's/\"\(.*\)\"/\1/')
+	cluster_list=$(aws --profile "$profile" eks list-clusters |
+		jq -r '.clusters | @csv' |
+		tr ',' '\n' |
+		sed 's/\"\(.*\)\"/\1/')
 
-    cluster_number=$(echo "$cluster_list" | wc -l)
+	cluster_number=$(echo "$cluster_list" | wc -l)
 
-    if [ "${cluster_number}" -gt 1 ]; then
-        cluster=$(echo "$cluster_list" |\
-        fzf --height=30% \
-        --layout=reverse \
-        --border \
-        --prompt 'Which EKS cluster do you want to upgrade? ' || true)
-    else
-        cluster=$cluster_list
-    fi
+	if [ "${cluster_number}" -gt 1 ]; then
+		cluster=$(echo "$cluster_list" |
+			fzf --height=30% \
+				--layout=reverse \
+				--border \
+				--prompt 'Which EKS cluster do you want to upgrade? ' || true)
+	else
+		cluster=$cluster_list
+	fi
 
-    echo "$cluster"
+	echo "$cluster"
 }
 
 export -f get_cluster
 
 get_nodes_number() {
-    local profile="${1}"
-    local cluster="${2}"
-    local number_of_nodes
+	local profile="${1}"
+	local cluster="${2}"
+	local number_of_nodes
 
-    number_of_nodes=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" -o json 2>/dev/null | jq '. | length')
+	number_of_nodes=$(eksctl get nodegroup --profile "$profile" --cluster "$cluster" -o json 2>/dev/null | jq '. | length')
 
-    echo "$number_of_nodes"
+	echo "$number_of_nodes"
 }
- export -f get_nodes_number
+export -f get_nodes_number
 
 main() {
-    
-    local process_id="${1}"
-    local profile="${2}"
-    local cluster="${3}"
-    local verbose="${4}"
-    local node_data
-    local node_name
-    local status
-    local max_size
-    local min_size
-    local desired_capacity
-    local is_scaled
 
-    node_data=$(get_node_data "$process_id" "$profile" "$cluster")
-    readonly node_data
-    
-    node_name=$(echo "$node_data" | jq -r '. as $e | [$e.Name] | @csv')
-    status=$(echo "$node_data" | jq -r '. as $e | [$e.Status] | @csv')
-    
-    max_size=$(echo "$node_data" | jq -r '. as $e | [$e.MaxSize] | @csv')
-    readonly max_size
-    
-    min_size=$(echo "$node_data" | jq -r '. as $e | [$e.MinSize] | @csv')
-    readonly min_size
-    
-    desired_capacity=$(echo "$node_data" | jq -r '. as $e | [$e.DesiredCapacity] | @csv')
-    readonly desired_capacity
-    
-    is_scaled=0
+	local process_id="${1}"
+	local profile="${2}"
+	local cluster="${3}"
+	local verbose="${4}"
+	local node_data
+	local node_name
+	local status
+	local max_size
+	local min_size
+	local desired_capacity
+	local is_scaled
 
-    print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Processing ${node_name//\"/}..."
-    
-    # Checking nodegroup status and capacity, scaling up if necessary
+	node_data=$(get_node_data "$process_id" "$profile" "$cluster")
+	readonly node_data
 
-    if [[ "${status//\"/}" == "ACTIVE" ]]; then
-        if [[ -n "$verbose" ]]; then
-            print_color "green" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Nodegroup status is ${status//\"/}"
-            print_color "green" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Nodegroup max size is ${max_size}"
-            print_color "green" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Nodegroup min size is ${min_size}"
-            print_color "green" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Nodegroup desired capacity is ${desired_capacity}"
-        fi
+	node_name=$(echo "$node_data" | jq -r '. as $e | [$e.Name] | @csv')
+	status=$(echo "$node_data" | jq -r '. as $e | [$e.Status] | @csv')
 
-        if [ "$desired_capacity" -lt 2 ]; then
-            if [ "$max_size" -lt 2 ]; then
-                print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Scaling up nodegroup ${node_name//\"/} capacity..."
-                is_scaled=1
-                scale_nodegroup "$node_name" "$profile" "$cluster" 2 2
-            else
-                print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Scaling up nodegroup ${node_name//\"/} capacity..."
-                is_scaled=1
-                scale_nodegroup "$node_name" "$profile" "$cluster" 2 "$max_size"
-            fi
-        fi
+	max_size=$(echo "$node_data" | jq -r '. as $e | [$e.MaxSize] | @csv')
+	readonly max_size
 
-        print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Waiting for node ${node_name//\"/} to be ready.."
-        wait_nodegroup "$process_id" "$node_name" "$profile" "$cluster"
-        
-        print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Upgrading ${node_name//\"/}..."
-        upgrade_nodegroup "$node_name" "$profile" "$cluster"
+	min_size=$(echo "$node_data" | jq -r '. as $e | [$e.MinSize] | @csv')
+	readonly min_size
 
-        # If nodegroup was scaled up, bring it down to the original capacity, getting it from readonly constant $node_data for good measure
+	desired_capacity=$(echo "$node_data" | jq -r '. as $e | [$e.DesiredCapacity] | @csv')
+	readonly desired_capacity
 
-        case $is_scaled in
-            0)
-                ;;
-            1)
-                print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Scaling down ${node_name//\"/}..."
-                scale_nodegroup "$node_name" "$profile" "$cluster" "$desired_capacity" "$max_size"
-                ;;
-            *)
-                exit 1
-                ;;
-        esac
+	is_scaled=0
 
-        print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] ${node_name//\"/} succesfully upgraded"
+	print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Processing ${node_name//\"/}..."
 
-    else
-        print_color "red" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [ERROR] Skipped nodegroup ${node_name//\"/} due to its status" 1>&2 
-    fi
+	# Checking nodegroup status and capacity, scaling up if necessary
+
+	if [[ "${status//\"/}" == "ACTIVE" ]]; then
+		if [[ -n "$verbose" ]]; then
+			print_color "green" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Nodegroup status is ${status//\"/}"
+			print_color "green" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Nodegroup max size is ${max_size}"
+			print_color "green" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Nodegroup min size is ${min_size}"
+			print_color "green" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Nodegroup desired capacity is ${desired_capacity}"
+		fi
+
+		if [ "$desired_capacity" -lt 2 ]; then
+			if [ "$max_size" -lt 2 ]; then
+				print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Scaling up nodegroup ${node_name//\"/} capacity..."
+				is_scaled=1
+				scale_nodegroup "$node_name" "$profile" "$cluster" 2 2
+			else
+				print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Scaling up nodegroup ${node_name//\"/} capacity..."
+				is_scaled=1
+				scale_nodegroup "$node_name" "$profile" "$cluster" 2 "$max_size"
+			fi
+		fi
+
+		print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Waiting for node ${node_name//\"/} to be ready.."
+		wait_nodegroup "$process_id" "$node_name" "$profile" "$cluster"
+
+		print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Upgrading ${node_name//\"/}..."
+		upgrade_nodegroup "$node_name" "$profile" "$cluster"
+
+		# If nodegroup was scaled up, bring it down to the original capacity, getting it from readonly constant $node_data for good measure
+
+		case $is_scaled in
+		0) ;;
+		1)
+			print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] Scaling down ${node_name//\"/}..."
+			scale_nodegroup "$node_name" "$profile" "$cluster" "$desired_capacity" "$max_size"
+			;;
+		*)
+			exit 1
+			;;
+		esac
+
+		print_color "blue" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [INFO] ${node_name//\"/} succesfully upgraded"
+
+	else
+		print_color "red" "[PID ${process_id}] $(date '+%Y-%m-%d %H:%M:%S') [ERROR] Skipped nodegroup ${node_name//\"/} due to its status" 1>&2
+	fi
 }
 
 export -f main
@@ -298,21 +297,21 @@ export -f main
 check_utils aws eksctl jq fzf parallel
 
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
- 
+
 if [[ -z "$profile" ]]; then
-    profile=$(get_profile)
+	profile=$(get_profile)
 fi
 
 check_profile "$profile"
 
 if [[ -z "$cluster" ]]; then
-    cluster=$(get_cluster "$profile")
+	cluster=$(get_cluster "$profile")
 fi
- 
+
 number_of_nodes=$(get_nodes_number "$profile" "$cluster")
 
 # ------------------------- Nodegroups Upgrade ---------------------------
 
 print_color "blue" "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Checking ${cluster} managed nodegroups..."
 
-parallel --ungroup --jobs "${jobs}" main ::: $(seq 0 $(( number_of_nodes - 1 ))) ::: "${profile}" ::: "${cluster}" ::: "${verbose}"
+parallel --ungroup --jobs "${jobs}" main ::: $(seq 0 $((number_of_nodes - 1))) ::: "${profile}" ::: "${cluster}" ::: "${verbose}"

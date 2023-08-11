@@ -10,12 +10,12 @@
 #   Item. eg: Laptop, VR, Watch
 ##########################################
 
-test_https(){
-    if wget --spider https://"$1" > /dev/null 2>&1; then
-        local https="true"
-    else
-        local https="false"
-    fi
+test_https() {
+	if wget --spider https://"$1" >/dev/null 2>&1; then
+		local https="true"
+	else
+		local https="false"
+	fi
 
-    echo $https
+	echo $https
 }
