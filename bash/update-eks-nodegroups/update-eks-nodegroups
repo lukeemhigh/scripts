@@ -13,7 +13,7 @@ set -o pipefail
 
 # shellcheck source=/dev/null
 
-source "${HOME}/git-repos/scripts/bash/useful-functions/print-color.sh"
+source "${HOME}/git-repos/scripts/bash/lib/print-color.sh"
 
 export -f print_color
 
