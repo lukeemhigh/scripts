@@ -1,6 +1,6 @@
 # Description
 
-Compilation of somewhat useful functions to be sourced into other scritps
+Compilation of somewhat useful functions to be sourced into other scripts
 
 ## print-color
 
