@@ -103,4 +103,8 @@ for region in "${region_list[@]}"; do
 	done
 done
 
+# ------------------------ Run Python CSV Parser ------------------------
+
+source /home/lukeemhigh/anaconda3/bin/activate get-aws-resources
+
 ./csv_import.py --directory "$output_path"
