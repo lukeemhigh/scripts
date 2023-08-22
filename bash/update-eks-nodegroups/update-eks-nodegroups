@@ -290,7 +290,7 @@ export -f print_color
 
 # shellcheck source=/dev/null
 
-source "${lib_path}/check_utils.sh"
+source "${lib_path}/check-utils.sh"
 
 export -f check_utils
 
