@@ -114,36 +114,6 @@ upgrade_nodegroup() {
 
 export -f upgrade_nodegroup
 
-get_profile() {
-	local profiles
-	local profiles_number
-	local profile
-
-	profiles=$(aws configure list-profiles)
-	profiles_number=$(echo "$profiles" | wc -l)
-
-	case $profiles_number in
-	0)
-		print_color "red" "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') Invalid config file" 1>&2
-		exit 1
-		;;
-	1)
-		profile=${profiles}
-		;;
-	*)
-		profile=$(echo "$profiles" |
-			fzf --height=30% \
-				--layout=reverse \
-				--border \
-				--prompt 'Which AWS profile do you want to use? ' || echo "gnappo" && exit 1)
-		;;
-	esac
-
-	echo "$profile"
-}
-
-export -f get_profile
-
 check_profile() {
 	local profile="${1}"
 	local profiles
@@ -283,16 +253,16 @@ export -f main
 lib_path=$(get_lib_path)
 
 # shellcheck source=/dev/null
-
 source "${lib_path}/print-color.sh"
-
 export -f print_color
 
 # shellcheck source=/dev/null
-
 source "${lib_path}/check-utils.sh"
-
 export -f check_utils
+
+# shellcheck source=/dev/null
+source "${lib_path}/get-aws-profile.sh"
+export -f get_aws_profile
 
 # ---------------------------- Pre-Processing -----------------------------
 
@@ -303,7 +273,7 @@ check_utils aws eksctl jq fzf parallel
 # If optargs are empty, prompt user for aws profile and get eks cluster name from query
 
 if [[ -z "$profile" ]]; then
-	profile=$(get_profile)
+	profile=$(get_aws_profile)
 fi
 
 check_profile "$profile"
