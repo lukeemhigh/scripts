@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Automate Sonatype Nexus Repository inventory retrieval through its REST APIs
 #
