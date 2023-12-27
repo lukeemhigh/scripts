@@ -19,20 +19,20 @@ if [ $? -ne 0 ]; then
 Usage: $0 [OPTIONS] [ARGUMENTS]
 
 Options:
--p, --profile <aws-profile>
-        The AWS profile name you wish to use.
-        
--c, --cluster <cluster-name>
-        The name of the eks cluster you want to upgrade.
-        
--j, --jobs <int>
-        The number of concurrent jobs to launch. Default is 2.
-        
--v, --verbose
-        Activates some very minor debug logs.
-        
--h, --help
-        Show this help.
+  -p, --profile <aws-profile>
+          The AWS profile name you wish to use.
+          
+  -c, --cluster <cluster-name>
+          The name of the eks cluster you want to upgrade.
+          
+  -j, --jobs <int>
+          The number of concurrent jobs to launch. Default is 2.
+          
+  -v, --verbose
+          Activates some very minor debug logs.
+          
+  -h, --help
+          Show this help.
 EOF
 	exit 1
 fi
@@ -67,20 +67,20 @@ while true; do
 Usage: $0 [OPTIONS] [ARGUMENTS]
 
 Options:
--p, --profile <aws-profile>
-        The AWS profile name you wish to use.
-        
--c, --cluster <cluster-name>
-        The name of the eks cluster you want to upgrade.
-        
--j, --jobs <int>
-        The number of concurrent jobs to launch. Default is 2.
-        
--v, --verbose
-        Activates some very minor debug logs.
-        
--h, --help
-        Show this help.
+  -p, --profile <aws-profile>
+          The AWS profile name you wish to use.
+          
+  -c, --cluster <cluster-name>
+          The name of the eks cluster you want to upgrade.
+          
+  -j, --jobs <int>
+          The number of concurrent jobs to launch. Default is 2.
+          
+  -v, --verbose
+          Activates some very minor debug logs.
+          
+  -h, --help
+          Show this help.
 EOF
 		exit 1
 		;;
