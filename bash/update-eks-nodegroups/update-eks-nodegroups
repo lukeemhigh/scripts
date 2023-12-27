@@ -14,7 +14,6 @@ set -o pipefail
 TEMP=$(getopt -o p:c:j:vh --long profile:,cluster:,jobs:,verbose,help -n 'update-eks-nodegroups' -- "$@")
 
 if [ $? -ne 0 ]; then
-	# echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME] [--jobs | -j] [NUMBER OF CONCURRENT JOBS] [--verbose | -v]" 1>&2
 	cat <<EOF 1>&2
 
 Usage: $0 [OPTIONS] [ARGUMENTS]
@@ -63,7 +62,6 @@ while true; do
 		break
 		;;
 	-h | --help | *)
-		# echo "usage: $0 [--profile | -p] [AWSCLI_PROFILE] [--cluster | -c] [CLUSTER_NAME] [--jobs | -j] [NUMBER OF CONCURRENT JOBS] [--verbose | -v]" 1>&2
 		cat <<EOF 1>&2
 		
 Usage: $0 [OPTIONS] [ARGUMENTS]
