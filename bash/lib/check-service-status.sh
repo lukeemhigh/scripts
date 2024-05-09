@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Author: Luca Giugliardi
-# Email: luca.giugliardi@gmail.com
+# Email: <luca.giugliardi@gmail.com>
 
 #####################################
 # Check the status of a given service
@@ -10,11 +10,11 @@
 #   Service. eg: httpd, firewalld
 #####################################
 check_service_status() {
-	is_service_active=$(sudo systemctl is-active "$1")
-	if [ "$is_service_active" = "active" ]; then
-		print_color "green" "$1 service is active"
-	else
-		print_color "red" "$1 service is not running"
-		exit 1
-	fi
+  is_service_active=$(sudo systemctl is-active "$1")
+  if [ "$is_service_active" = "active" ]; then
+    print_color "green" "$1 service is active"
+  else
+    print_color "red" "$1 service is not running"
+    exit 1
+  fi
 }

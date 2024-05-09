@@ -3,131 +3,255 @@
 # Automate Sonatype Nexus Repository inventory retrieval through its REST APIs
 #
 # Author Luca Giugliardi
-# Email: luca.giugliardi@gmail.com
+# Email: <luca.giugliardi@gmail.com>
 
 # ----------------------------- Shell Options ----------------------------
+
 set -o pipefail
 
-# --------------------------- Import Functions ---------------------------
+# ------------------------------- Optargs --------------------------------
 
-# shellcheck source=/dev/null
-source "${HOME}/git-repos/scripts/bash/useful-functions/print-color.sh"
-
-# shellcheck source=/dev/null
-source "${HOME}/git-repos/scripts/bash/useful-functions/test-https.sh"
-
-# --------------------------- Optional Flags ---------------------------
-
-TEMP=$(getopt -o a:n --long address:,nogroups -n 'test.sh' -- "$@")
+TEMP=$(getopt -o a:o:nh --long address:,output:,nogroups,help -n 'nexus-inventory-retrieve' -- "$@")
 
 if [ $? -ne 0 ]; then
-    echo "usage: $0 [--address | -a] [NEXUS_ADDRESS] [--nogroups | -n]"
-    exit 1
+  cat <<EOF 1>&2
+
+Usage: $0 [OPTIONS] [ARGUMENTS]
+
+Options:
+  -a, --address <address>
+          IP address (or fqdn) of the Nexus Repository.
+
+  -o, --output <output-directory>
+          Path to the direcory in which you want to store the results.
+          Default is "${HOME}/tmp/nexus-inventory-$(date +%F_%T)".
+
+  -n, --nogroups
+          Skip group type repositories.
+
+  -h, --help
+          Show this help.
+EOF
+  exit 1
 fi
 
 eval set -- "$TEMP"
 
 while true; do
-    case "$1" in
-        -a|--address)
-            address="$2"
-            shift 2
-            ;;
-        -n|--nogroups)
-            skip_group="true"
-            shift
-            ;;
-        --)
-            shift
-            break
-            ;;
-        *)
-            echo "usage: $0 [--address | -a] [NEXUS_ADDRESS] [--nogroups | -n]"
-            exit 1
-            ;;
-    esac
+  case "$1" in
+    -a | --address)
+      if [[ -z "${2}" ]]; then
+        read -p "Enter you Nexus Repository address:"$'\n> ' address
+      else
+        address="${2}"
+      fi
+      shift 2
+      ;;
+    -o | --output)
+      output_basename="${2:-"${HOME}/tmp"}"
+      shift 2
+      ;;
+    -n | --nogroups)
+      skip_group="true"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -h | --help | *)
+      cat <<EOF 1>&2
+		
+Usage: $0 [OPTIONS] [ARGUMENTS]
+
+Options:
+  -a, --address <address>
+          IP address (or fqdn) of the Nexus Repository.
+
+  -o, --output <output-directory>
+          Path to the direcory in which you want to store the results.
+          Default is "${HOME}/tmp/nexus-inventory-$(date +%F_%T)".
+          
+  -n, --nogroups
+          Skip group type repositories.
+
+  -h, --help
+          Show this help.
+EOF
+      exit 1
+      ;;
+  esac
 done
 
-# If no flag is specified, prompt user for Nexus Repo address
+# ------------------------------- Functions ------------------------------
 
-if [ -z "$address" ]; then
-    read -p "Enter your Nexus Repo Address:"$'\n> ' address
-fi
+get_lib_path() {
+  local lib_path
+  lib_path=$(cd "$(dirname "$0")" && echo "${PWD}" | sed 's/\/[^/]*$/\/lib/')
+  echo "${lib_path}"
+}
 
-# --------------------------- Global Variables ---------------------------
+get_protocol() {
+  local address="$1"
 
-date=$(date +%F_%T)
+  https=$(test_https "$address")
 
-output_path="${HOME}/tmp/nexus-inventory-$date"
-
-https=$(test_https "$address")
-
-# --------------------------- Repositories Retrieval ---------------------------
-
-print_color "blue" "Checking https connection.."
-
-if [[ "$https" == "true" ]]; then
+  if [[ "$https" == "true" ]]; then
     print_color "green" "Server accepts https connections. Proceeding.."
     protocol="https"
-else
-    print_color "red" "Server does not accept https connection. Falling back to http.."
+  else
+    print_color "yellow" "Server does not accept https connection. Falling back to http.."
     protocol="http"
-fi
+  fi
 
-print_color "blue" "Checking repositories for ${address//:[0-9]*/}"
+  echo "${protocol}"
+}
 
-mkdir -p "${output_path}/assets"
+get_repo_list() {
+  local protocol="$1"
+  local address="$2"
+  local repo_list
 
-curl -sn -X 'GET' \
+  repo_list=$(curl -sn -X 'GET' \
     "${protocol}://${address}/service/rest/v1/repositories" \
-    -H 'accept: application/json' | \
-    jq -r '.[] | . as $e | [.name,.format,.type,.url] | @csv' \
-    >> "${output_path}/${address//:[0-9]*/}-repositories-list.csv"
+    -H 'accept: application/json' |
+    jq -r '.[] | . as $e | [.name,.format,.type,.url] | @csv')
 
-print_color "green" "Done writing file $output_path/${address//:[0-9]*/}-repositories-list.csv"
+  echo "${repo_list}"
+}
 
-# --------------------------- Assets Retrieval ---------------------------
+get_output_path() {
+  local output_basename="$1"
+  local date_suffix
+  local output_dir
+  local output_path
 
-while IFS=, read -r repo type; do
+  date_suffix=$(date +%F_%T)
+  readonly date_suffix
+
+  output_dir="nexus-inventory-${date_suffix}"
+  readonly output_dir
+
+  output_path="${output_basename}/${output_dir}"
+  readonly output_path
+
+  echo "${output_path}"
+}
+
+write_asset_csv() {
+  local protocol="$1"
+  local address="$2"
+  local repo="$3"
+  local output_path="$4"
+  local continuation_token="empty"
+  local json_page
+  local i=0
+
+  while [[ -n "${continuation_token//\"/}" ]]; do
+    i=$((++i))
+    if [[ "${continuation_token//\"/}" == "empty" ]]; then
+      json_page=$(curl -sn -X 'GET' "${protocol}://${address}/service/rest/v1/assets?repository=${repo//\"/}" \
+        -H 'accept: application/json')
+      echo "$json_page" | jq -r '.items[] | . as $e | [.repository,.format,.id,.path,.downloadUrl] | @csv' \
+        >>"${output_path}/assets/${repo//\"/}-assets-list.csv"
+      continuation_token=$(echo "$json_page" | jq -r '. as $e | [.continuationToken] | @csv')
+    else
+      json_page=$(curl -sn -X 'GET' "${protocol}://${address}/service/rest/v1/assets?continuationToken=${continuation_token//\"/}&repository=${repo//\"/}" \
+        -H 'accept: application/json')
+      echo "$json_page" | jq -r '.items[] | . as $e | [.repository,.format,.id,.path,.downloadUrl] | @csv' \
+        >>"${output_path}/assets/${repo//\"/}-assets-list.csv"
+      continuation_token=$(echo "$json_page" | jq -r '. as $e | [.continuationToken] | @csv')
+    fi
+  done
+
+  if [[ ! -s "${output_path}/assets/${repo//\"/}-assets-list.csv" ]]; then
+    print_color "red" "Repo ${repo//\"/} is empty"
+    rm -f "${output_path}/assets/${repo//\"/}-assets-list.csv"
+  else
+    print_color "white" "Done processing $i pages"
+    print_color "green" "Assets found. Written list at ${output_path}/assets/${repo//\"/}-assets-list.csv"
+  fi
+}
+
+main() {
+  local address
+  local output_basename
+  local skip_group
+  local output_path
+  local protocol
+
+  # ------------------------------ Pre-processing ------------------------
+
+  # If an address is not specified, prompt user for it
+  # if [ -z "$address" ]; then
+  # 	read -p "Enter your Nexus Repo Address:"$'\n> ' address
+  # fi
+  # readonly address
+
+  output_path=$(get_output_path "${output_basename}")
+  readonly output_path
+
+  # Create directory structure for output files
+  mkdir -p "${output_path}/assets"
+
+  # ----------------------------- Testing https --------------------------
+
+  print_color "blue" "Checking https connection.."
+
+  protocol=$(get_protocol "${address}")
+  readonly protocol
+
+  # ----------------------- Gather repositories info ---------------------
+
+  print_color "blue" "Checking repositories for ${address//:[0-9]*/}"
+
+  get_repo_list "${protocol}" "${address}" >>"${output_path}/${address//:[0-9]*/}-repositories-list.csv"
+
+  print_color "blue" "Output written to $output_path/${address//:[0-9]*/}-repositories-list.csv"
+
+  # --------------------------- Assets Retrieval ---------------------------
+
+  # TODO: Use parallel insted of loops
+
+  while IFS=, read -r repo type; do
 
     print_color "blue" "Checking assets for ${repo//\"/}"
 
-    continuation_token="gnappo"
-    i=0
-
     if [[ "$skip_group" == "true" ]] && [[ "${type//\"/}" == group ]]; then
-        print_color "blue" "Skipping group ${repo//\"/}"
-        continue
+      print_color "blue" "Skipping group ${repo//\"/}"
+      continue
     fi
 
-    while [ -n "${continuation_token//\"/}" ]; do
+    write_asset_csv "${protocol}" "${address}" "${repo}" "${output_path}"
 
-        i=$(( ++i ))
+  done < <(cut -d',' -f1,3 "${output_path}/${address//:[0-9]*/}-repositories-list.csv")
 
-        if [ "${continuation_token//\"/}" = "gnappo" ]; then
-            json_page=$(curl -sn -X 'GET' "${protocol}://${address}/service/rest/v1/assets?repository=${repo//\"/}" \
-                -H 'accept: application/json')
-            echo "$json_page" | jq -r '.items[] | . as $e | [.repository,.format,.id,.path,.downloadUrl] | @csv' \
-                >> "${output_path}/assets/${repo//\"/}-assets-list.csv"
-            continuation_token=$(echo "$json_page" | jq -r '. as $e | [.continuationToken] | @csv')
-        else
-            json_page=$(curl -sn -X 'GET' "${protocol}://${address}/service/rest/v1/assets?continuationToken=${continuation_token//\"/}&repository=${repo//\"/}" \
-                -H 'accept: application/json')
-            echo "$json_page" | jq -r '.items[] | . as $e | [.repository,.format,.id,.path,.downloadUrl] | @csv' \
-                >> "${output_path}/assets/${repo//\"/}-assets-list.csv"
-            continuation_token=$(echo "$json_page" | jq -r '. as $e | [.continuationToken] | @csv')
-        fi
+  unset IFS
 
-    done
+  # GNU Parallel is a godsend
+  # cut -d',' -f1,3 "${output_path}/${address//:[0-9]*/}-repositories-list.csv" | parallel --colsep ',' '
+  #   repo={1}
+  #   type={2}
+  #   print_color "blue" "Checking assets for ${repo//\"/}"
+  #   if [[ "$skip_group" == "true" ]] && [[ "${type//\"/}" == group ]]; then
+  #     print_color "blue" "Skipping group ${repo//\"/}"
+  #   else
+  #     write_asset_csv "${protocol}" "${address}" "${repo}" "${output_path}"
+  #   fi
+  # '
 
-    if [[ ! -s "${output_path}/assets/${repo//\"/}-assets-list.csv" ]]; then
-        print_color "red" "Repo ${repo//\"/} is empty"
-        rm -f "${output_path}/assets/${repo//\"/}-assets-list.csv"
-    else
-        print_color "white" "Done processing $i pages"
-        print_color "green" "Assets found. Written list at ${output_path}/assets/${repo//\"/}-assets-list.csv"
-    fi
+}
 
-done < <(cut -d',' -f1,3 "${output_path}/${address//:[0-9]*/}-repositories-list.csv")
+# --------------------------- Import Functions ---------------------------
 
-unset IFS
+lib_path=$(get_lib_path)
+
+# shellcheck source=/dev/null
+source "${lib_path}/print-color.sh"
+
+# shellcheck source=/dev/null
+source "${lib_path}/test-https.sh"
+
+# --------------------------- Global Variables ---------------------------
+
+main

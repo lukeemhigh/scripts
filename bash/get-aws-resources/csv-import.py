@@ -3,15 +3,16 @@
 # Imports .csv files into an Excel workbook
 #
 # Author: Luca Giugliardi
-# Email: luca.giugliardi@gmail.com
+# Email: <luca.giugliardi@gmail.com>
 
 import argparse
-import pandas as pd
-import openpyxl
-from openpyxl.worksheet.dimensions import ColumnDimension, DimensionHolder
-from openpyxl.utils import get_column_letter
-import os
 import datetime
+import os
+
+import openpyxl
+import pandas as pd
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.dimensions import ColumnDimension, DimensionHolder
 
 parser = argparse.ArgumentParser(description="Imports csv into an Excel workbook.")
 

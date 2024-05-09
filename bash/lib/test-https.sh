@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Author: Luca Giugliardi
-# Email: luca.giugliardi@gmail.com
+# Email: <luca.giugliardi@gmail.com>
 
 ##########################################
 # Check if an item is present on the page
@@ -11,11 +11,11 @@
 ##########################################
 
 test_https() {
-	if wget --spider https://"$1" >/dev/null 2>&1; then
-		local https="true"
-	else
-		local https="false"
-	fi
+  if wget --spider https://"$1" >/dev/null 2>&1; then
+    local https="true"
+  else
+    local https="false"
+  fi
 
-	echo $https
+  echo $https
 }
