@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 #
 # Cleans up any dangling EBS volumes that are not attached to
-# the EKS cluster. Also remove any pv or pvc that once claimed
-# those volumes
+# the EKS cluster.
 #
 # Author Luca Giugliardi
 # Email: <luca.giugliardi@gmail.com>
@@ -55,16 +54,6 @@ filter_data() {
   awk 'NR==FNR{exclude[$0];next} !($0 in exclude)' "${tempfile}".tmp "${tempfile}" >>"${tempfile}.results"
   rm "${tempfile}" "${tempfile}.tmp"
   mv "${tempfile}.results" "${tempfile}"
-}
-
-print_as_table() {
-  local filename="${1}"
-  local -a column_names=("${@:2}")
-
-  printf "\n"
-  sed -e 's/,/ /g' -e 's/"//g' "${filename}" |
-    column -t -N "$(printf "%s," "${column_names[@]}")"
-  printf "\n"
 }
 
 delete_ebs_volumes() {
@@ -123,5 +112,8 @@ export -f log
 
 # shellcheck disable=1091
 source "${lib_path}/check-utils.sh"
+
+# shellcheck disable=1091
+source "${lib_path}/print-as-table.sh"
 
 main
