@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#
 # Author: Luca Giugliardi
 # Email: <luca.giugliardi@gmail.com>
 #
@@ -6,7 +7,6 @@
 # Prints an appropriatley formatted
 # log to the console with an ISO8601
 # timestamp.
-#
 # Usage:
 #   log <level> <message>
 #####################################
@@ -20,7 +20,11 @@ log() {
       log_level="[INFO]"
       color="\033[0;32m"
       ;;
-    "warning")
+    "warning" | "warn")
+      log_level="[WARNING]"
+      color="\033[1;33m"
+      ;;
+    "debug")
       log_level="[WARNING]"
       color="\033[1;33m"
       ;;
@@ -33,5 +37,5 @@ log() {
       ;;
   esac
 
-  echo -e "$(date -u +"%Y-%m-%dT%H:%M:%S%:z") ${color}${log_level}${color_reset}: ${message}"
+  echo -e "$(date -u +"%Y-%m-%dT%H:%M:%S %Z%:z") ${color}${log_level}${color_reset}: ${message}"
 }
