@@ -146,7 +146,7 @@ wait_nodegroup() {
     ((i++))
   done
 
-  log "info" "(PID ${process_id}) Waited for $((10 * i))s"
+  log info "(PID ${process_id}) Waited for $((10 * i))s"
 }
 
 export -f wait_nodegroup
@@ -168,7 +168,7 @@ check_profile() {
   profiles=$(aws configure list-profiles)
 
   if [[ ! "$profiles" =~ $profile ]]; then
-    log "error" "No profile selected, aborting" 1>&2
+    log error "No profile selected, aborting" 1>&2
     exit 1
   fi
 }
@@ -244,34 +244,34 @@ main() {
 
   is_scaled=0
 
-  log "info" "(PID ${process_id}) Processing ${node_name//\"/}..."
+  log info "(PID ${process_id}) Processing ${node_name//\"/}..."
 
   # Checking nodegroup status and capacity, scaling up if necessary
 
   if [[ "${status//\"/}" == "ACTIVE" ]]; then
     if [[ -n "$verbose" ]]; then
-      log "info" "(PID ${process_id}) Nodegroup status is ${status//\"/}"
-      log "info" "(PID ${process_id}) Nodegroup max size is ${max_size}"
-      log "info" "(PID ${process_id}) Nodegroup min size is ${min_size}"
-      log "info" "(PID ${process_id}) Nodegroup desired capacity is ${desired_capacity}"
+      log info "(PID ${process_id}) Nodegroup status is ${status//\"/}"
+      log info "(PID ${process_id}) Nodegroup max size is ${max_size}"
+      log info "(PID ${process_id}) Nodegroup min size is ${min_size}"
+      log info "(PID ${process_id}) Nodegroup desired capacity is ${desired_capacity}"
     fi
 
     if [ "$desired_capacity" -lt 2 ]; then
       if [ "$max_size" -lt 2 ]; then
-        log "info" "(PID ${process_id}) Scaling up nodegroup ${node_name//\"/} capacity..."
+        log info "(PID ${process_id}) Scaling up nodegroup ${node_name//\"/} capacity..."
         is_scaled=1
         scale_nodegroup "$node_name" "$profile" "$cluster" 2 2
       else
-        log "info" "(PID ${process_id}) Scaling up nodegroup ${node_name//\"/} capacity..."
+        log info "(PID ${process_id}) Scaling up nodegroup ${node_name//\"/} capacity..."
         is_scaled=1
         scale_nodegroup "$node_name" "$profile" "$cluster" 2 "$max_size"
       fi
     fi
 
-    log "info" "(PID ${process_id}) Waiting for node ${node_name//\"/} to be ready.."
+    log info "(PID ${process_id}) Waiting for node ${node_name//\"/} to be ready.."
     wait_nodegroup "$process_id" "$node_name" "$profile" "$cluster"
 
-    log "info" "(PID ${process_id}) Upgrading ${node_name//\"/}..."
+    log info "(PID ${process_id}) Upgrading ${node_name//\"/}..."
     upgrade_nodegroup "$node_name" "$profile" "$cluster"
 
     # If nodegroup was scaled up, bring it down to the original capacity, getting it from readonly constant $node_data for good measure
@@ -279,7 +279,7 @@ main() {
     case $is_scaled in
       0) ;;
       1)
-        log "info" "(PID ${process_id}) Scaling down ${node_name//\"/}..."
+        log info "(PID ${process_id}) Scaling down ${node_name//\"/}..."
         scale_nodegroup "$node_name" "$profile" "$cluster" "$desired_capacity" "$max_size"
         ;;
       *)
@@ -287,10 +287,10 @@ main() {
         ;;
     esac
 
-    log "info" "(PID ${process_id}) ${node_name//\"/} succesfully upgraded"
+    log info "(PID ${process_id}) ${node_name//\"/} succesfully upgraded"
 
   else
-    log "error" "(PID ${process_id}) Skipped nodegroup ${node_name//\"/} due to its status" 1>&2
+    log error "(PID ${process_id}) Skipped nodegroup ${node_name//\"/} due to its status" 1>&2
   fi
 }
 
@@ -300,15 +300,15 @@ export -f main
 
 lib_path=$(get_lib_path)
 
-# shellcheck source=/dev/null
+# shellcheck disable=1091
 source "${lib_path}/log.sh"
 export -f log
 
-# shellcheck source=/dev/null
+# shellcheck disable=1091
 source "${lib_path}/check-utils.sh"
 export -f check_utils
 
-# shellcheck source=/dev/null
+# shellcheck disable=1091
 source "${lib_path}/get-aws-profile.sh"
 export -f get_aws_profile
 
@@ -334,6 +334,6 @@ number_of_nodes=$(get_nodes_number "$profile" "$cluster")
 
 # ------------------------- Nodegroups Upgrade ---------------------------
 
-log "info" "Checking ${cluster} managed nodegroups..."
+log info "Checking ${cluster} managed nodegroups..."
 
 parallel --ungroup --jobs "${jobs}" main ::: $(seq 0 $((number_of_nodes - 1))) ::: "${profile}" ::: "${cluster}" ::: "${verbose}"
