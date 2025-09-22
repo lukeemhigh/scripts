@@ -16,15 +16,15 @@ log() {
   local color_reset="\033[0m"
 
   case "${1}" in
+    "debug")
+      log_level="[DEBUG]"
+      color="\033[1;34m"
+      ;;
     "info")
       log_level="[INFO]"
       color="\033[0;32m"
       ;;
     "warning" | "warn")
-      log_level="[WARNING]"
-      color="\033[1;33m"
-      ;;
-    "debug")
       log_level="[WARNING]"
       color="\033[1;33m"
       ;;
