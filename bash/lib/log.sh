@@ -18,7 +18,7 @@ log() {
   case "${1}" in
     "debug")
       log_level="[DEBUG]"
-      color="\033[1;34m"
+      color="\033[0;34m"
       ;;
     "info")
       log_level="[INFO]"
@@ -26,7 +26,7 @@ log() {
       ;;
     "warning" | "warn")
       log_level="[WARNING]"
-      color="\033[1;33m"
+      color="\033[0;33m"
       ;;
     "error")
       log_level="[ERROR]"
