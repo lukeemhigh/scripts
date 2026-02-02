@@ -15,26 +15,7 @@ TEMP=$(getopt -o p:c:j:vh --long profile:,cluster:,jobs:,verbose,help -n 'update
 
 # shellcheck disable=2181
 if [ $? -ne 0 ]; then
-  cat <<EOF 1>&2
-
-Usage: $0 [OPTIONS] [ARGUMENTS]
-
-Options:
-  -p, --profile <aws-profile>
-          The AWS profile name you wish to use.
-          
-  -c, --cluster <cluster-name>
-          The name of the eks cluster you want to upgrade.
-          
-  -j, --jobs <int>
-          The number of concurrent jobs to launch. Default is 2.
-          
-  -v, --verbose
-          Activates some very minor debug logs.
-          
-  -h, --help
-          Show this help.
-EOF
+  print_usage 1>&2
   exit 1
 fi
 
@@ -58,13 +39,32 @@ while true; do
       verbose=1
       shift
       ;;
+    -h | --help)
+      print_usage 1>&2
+      exit 0
+      ;;
     --)
       shift
       break
       ;;
-    -h | --help | *)
-      cat <<EOF 1>&2
-		
+    *)
+      print_usage 1>&2
+      exit 1
+      ;;
+  esac
+done
+
+# ------------------------------ Functions -------------------------------
+
+get_lib_path() {
+  local lib_path
+  lib_path=$(cd "$(dirname "$0")" && echo "${PWD}" | sed 's/\/[^/]*$/\/lib/')
+  echo "${lib_path}"
+}
+export -f get_lib_path
+
+print_usage() {
+  cat <<EOF
 Usage: $0 [OPTIONS] [ARGUMENTS]
 
 Options:
@@ -83,20 +83,53 @@ Options:
   -h, --help
           Show this help.
 EOF
-      exit 1
-      ;;
-  esac
-done
-
-# ------------------------------ Functions -------------------------------
-
-get_lib_path() {
-  local lib_path
-  lib_path=$(cd "$(dirname "$0")" && echo "${PWD}" | sed 's/\/[^/]*$/\/lib/')
-  echo "${lib_path}"
 }
 
-export -f get_lib_path
+parse_args() {
+  local TEMP
+  TEMP=$(getopt -o p:c:j:vh --long profile:,cluster:,jobs:,verbose,help -n 'update-eks-nodegroups' -- "$@")
+
+  # shellcheck disable=2181
+  if [ $? -ne 0 ]; then
+    print_usage 1>&2
+    exit 1
+  fi
+
+  eval set -- "$TEMP"
+
+  while true; do
+    case "$1" in
+      -p | --profile)
+        profile="$2"
+        shift 2
+        ;;
+      -c | --cluster)
+        cluster="$2"
+        shift 2
+        ;;
+      -j | --jobs)
+        jobs="${2:=2}" # By default the script will launch 2 concurrent jobs
+        shift 2
+        ;;
+      -v | --verbose)
+        verbose=1
+        shift
+        ;;
+      -h | --help)
+        print_usage 1>&2
+        exit 0
+        ;;
+      --)
+        shift
+        break
+        ;;
+      *)
+        print_usage 1>&2
+        exit 1
+        ;;
+    esac
+  done
+}
 
 get_node_data() {
   local process_id="${1}"
@@ -108,7 +141,6 @@ get_node_data() {
     --cluster "$cluster" -o json 2>/dev/null |
     jq -r --argjson index "${process_id}" '.[$index]'
 }
-
 export -f get_node_data
 
 scale_nodegroup() {
@@ -126,7 +158,6 @@ scale_nodegroup() {
     --nodes-min "$min_size" \
     --nodes-max "$max_size" >/dev/null 2>&1
 }
-
 export -f scale_nodegroup
 
 wait_nodegroup() {
@@ -148,7 +179,6 @@ wait_nodegroup() {
 
   log info "(PID ${process_id}) Waited for $((10 * i))s"
 }
-
 export -f wait_nodegroup
 
 upgrade_nodegroup() {
@@ -159,7 +189,6 @@ upgrade_nodegroup() {
   eksctl upgrade nodegroup --profile "$profile" --cluster "$cluster" \
     --name "${node_name//\"/}" --force-upgrade >/dev/null 2>&1
 }
-
 export -f upgrade_nodegroup
 
 check_profile() {
@@ -172,7 +201,6 @@ check_profile() {
     exit 1
   fi
 }
-
 export -f check_profile
 
 get_cluster() {
@@ -199,7 +227,6 @@ get_cluster() {
 
   echo "$cluster"
 }
-
 export -f get_cluster
 
 get_nodes_number() {
@@ -214,7 +241,6 @@ get_nodes_number() {
 export -f get_nodes_number
 
 main() {
-
   local process_id="${1}"
   local profile="${2}"
   local cluster="${3}"
@@ -293,7 +319,6 @@ main() {
     log error "(PID ${process_id}) Skipped nodegroup ${node_name//\"/} due to its status" 1>&2
   fi
 }
-
 export -f main
 
 # ------------------------------- Imports --------------------------------
