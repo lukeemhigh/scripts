@@ -28,4 +28,3 @@ To perform the update, the script makes use of the following tools, so please ma
 - `jq`: Install through your package manager.
 - `fzf`: Install through your package manager, or from [GitHub](https://github.com/junegunn/fzf).
 - `parallel`: Install it through your package manager.
-
